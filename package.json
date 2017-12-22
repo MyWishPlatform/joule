@@ -16,6 +16,7 @@
     "ethereumjs-util": "^5.1.2",
     "ganache-cli": "^6.0.3",
     "truffle": "^4.0.4",
-    "zeppelin-solidity": "^1.4.0"
+    "zeppelin-solidity": "^1.4.0",
+    "ethereum-alarm-clock": "pipermerriam/ethereum-alarm-clock"
   }
 }
