@@ -1,30 +1,55 @@
 pragma solidity ^0.4.0;
 
 import "zeppelin-solidity/contracts/ownership/Ownable.sol";
-import "ethereum-alarm-clock/contracts/TimestampScheduler.sol";
+import "./TimestampScheduler.sol";
+import "./RequestTracker.sol";
+import "./RequestFactory.sol";
+
 import "./JouleContractHolder.sol";
-import "./Contract.sol";
+import "./contracts/Contract.sol";
+import "./contracts/SomeContract1.sol";
+import "./contracts/SomeContract2.sol";
+import "./JouleConsts.sol";
 
-contract Joule is JouleContractHolder, Ownable {
+contract Joule is usingConsts, JouleContractHolder, Ownable {
 
-    TimestampScheduler constant scheduler  = TimestampScheduler(address(this));
+    RequestTracker constant requestTracker = new RequestTracker();
+    RequestFactory constant requestFactory = new RequestFactory(requestTracker);
+    TimestampScheduler constant scheduler = new TimestampScheduler(requestFactory);
+
+    enum ContractType {SOME1, SOME2}
 
     function Joule() {
     }
 
-    function registerContract(address _contractAddress, uint64 _executionDate) payable {
-        hold(_contractAddress, _executionDate);
-//        _contractAddress.transfer(msg.value);
+    function registerContract(ContractType _type, uint _executionDate) returns(address _contractAddress) {
+        require(msg.value >= CONTRACT_PRICE_WEI);
 
-        scheduler.call(
-            _contractAddress,
-            bytes4(sha3(_methodSignature)),
-            sha3(),
-            255
-        );
+        Contract c;
+        if (_type == ContractType.SOME1) {
+            c = new SomeContract1();
+        }
+        else if (_type == ContractType.SOME2) {
+            c = new SomeContract2();
+        }
+
+        uint[7] memory args = [
+            0,
+            0,
+            255,
+            _executionDate,
+            200000,
+            0,
+            0
+        ];
+        scheduler.scheduleTransaction(_contractAddress, bytes4(sha3("execute()")), args);
     }
 
-    function executeContract(address _contractAddress, string _methodSignature) {
-        launch(_contractAddress, _methodSignature);
+    function deposit(address _contractAddress) payable {
+        Contract(_contractAddress).deposit();
+    }
+
+    function withdraw(address _contractAddress, uint _value) {
+        Contract(_contractAddress).withdraw(_value);
     }
 }
