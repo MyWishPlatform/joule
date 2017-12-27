@@ -6,8 +6,11 @@
     "test": "test"
   },
   "scripts": {
-    "install": "pipermerriam/ethereum-alarm-clock",
+    "install": "napa",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "napa": {
+    "ethereum-datetime": "pipermerriam/ethereum-datetime"
   },
   "author": "",
   "license": "ISC",

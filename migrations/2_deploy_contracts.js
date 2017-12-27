@@ -1,5 +1,5 @@
-const Joule = artifacts.require("./Joule.sol");
+const JouleContractHolder = artifacts.require("./JouleContractHolder.sol");
 
 module.exports = function(deployer, network, accounts) {
-    deployer.deploy(Joule);
+    deployer.deploy(JouleContractHolder);
 };
