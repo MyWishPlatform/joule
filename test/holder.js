@@ -50,47 +50,98 @@ contract('Holder', accounts => {
 
     it('#2 check insert before now', async () => {
         const holder = await JouleContractHolder.deployed();
-        const addresses = accounts;
 
+        const addresses = accounts;
+        const gasLimit = 1000000;
         const before5minutes = NOW - 5 * MINUTES;
 
         addresses.forEach(async (a) => {
-            await holder.insert(a, before5minutes).should.eventually.be.rejected;
+            await holder.insert(a, gasLimit, before5minutes).should.eventually.be.rejected;
         });
     });
 
     it('#3 check insert after now', async () => {
         const holder = await JouleContractHolder.deployed();
-        const addresses = accounts;
 
+        const addresses = accounts;
+        const gasLimit = 1000000;
         const after5minutes = NOW + 5 * MINUTES;
 
         addresses.forEach(async (a) => {
-            await holder.insert(a, after5minutes);
+            await holder.insert(a, gasLimit, after5minutes);
         });
     });
 
     it('#4 check insert and get next', async () => {
         const holder = await JouleContractHolder.deployed();
+
         const addresses = accounts;
 
+        const gasLimit1 = 1000000;
+        const gasLimit2 = 2000000;
+        const gasLimit3 = 3000000;
+        const gasLimit4 = 4000000;
+
+        const after3minutes = NOW + 3 * MINUTES;
         const after5minutes = NOW + 5 * MINUTES;
         const after7minutes = NOW + 7 * MINUTES;
         const after9minutes = NOW + 9 * MINUTES;
 
-        addresses.forEach(async (a) => {
-            await holder.insert(a, after7minutes);
-            await holder.insert(a, after5minutes);
-            await holder.insert(a, after9minutes);
+        addresses.forEach(async (address) => {
+            await holder.insert(address, gasLimit1, after7minutes);
         });
 
-        const getNextResult = await holder.getNext();
-        const resultAddresses = getNextResult[0];
-        const resultTimestamp = getNextResult[1];
+        addresses.forEach(async (address) => {
+            await holder.insert(address, gasLimit2, after5minutes);
+        });
+
+        addresses.forEach(async (address) => {
+            await holder.insert(address, gasLimit3, after9minutes);
+        });
+
+        addresses.forEach(async (address) => {
+            await holder.insert(address, gasLimit4, after3minutes);
+        });
+
+
+        const result = await holder.total();
+
+        for (let i = 0; i < result[0].length; i++) {
+            console.info(result[0][i], Number(result[1][i]), Number(result[2][i]));
+        }
 
         for (let i = 0; i < addresses.length; i++) {
-            resultAddresses[i].should.be.equals(addresses[i]);
+            result[0][i].should.be.equals(addresses[i]);
+            Number(result[1][i]).should.be.equals(gasLimit4);
+            Number(result[2][i]).should.be.equals(after3minutes);
         }
-        Math.trunc(Number(resultTimestamp) / 60).should.be.equals(Math.trunc(after5minutes / 60));
+        for (let i = addresses.length; i < addresses.length * 2; i++) {
+            result[0][i].should.be.equals(addresses[i - addresses.length]);
+            Number(result[1][i]).should.be.equals(gasLimit2);
+            Number(result[2][i]).should.be.equals(after5minutes);
+        }
+        for (let i = addresses.length * 2; i < addresses.length * 3; i++) {
+            result[0][i].should.be.equals(addresses[i - addresses.length * 2]);
+            Number(result[1][i]).should.be.equals(gasLimit1);
+            Number(result[2][i]).should.be.equals(after7minutes);
+        }
+        for (let i = addresses.length * 3; i < addresses.length * 4; i++) {
+            result[0][i].should.be.equals(addresses[i - addresses.length * 3]);
+            Number(result[1][i]).should.be.equals(gasLimit3);
+            Number(result[2][i]).should.be.equals(after9minutes);
+        }
+    });
+
+    it('test getNext', async () => {
+        const holder = await JouleContractHolder.deployed();
+
+        await holder.insert(accounts[2], 2000000, NOW + MINUTES);
+        await holder.insert(accounts[0], 1000000, NOW);
+        await holder.insert(accounts[1], 2000000, NOW + 3 * MINUTES);
+
+        const result = await holder.getNext();
+        result[0].should.be.equals(accounts[0]);
+        result[1].should.be.equals(100000);
+        result[2].should.be.equals(NOW);
     });
 });
