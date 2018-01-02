@@ -27,13 +27,18 @@ contract JouleContractHolder {
     bytes32 public head = 0;
     mapping (bytes32 => Object) public objects;
 
-    function toKey(address _address, uint _gasLimit, uint _timestamp) constant returns (bytes32 result) {
+    function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) constant returns (bytes32 result) {
         var (year, month, day, hour, minute) = decomposeTimestamp(_timestamp);
-        result = 0x5749534800000000000000000000000000000000000000000000000000000000;
+        result = 0x0000000000000000000000000000000000000000000000000000000000000000;
+        //         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - address
+        //                                                 ^^^^^^^^ - timestamp
+        //                                                         ^^^^^^^^ - gas limit
+        //                                                                 ^^^^^^^^ - gas price
         assembly {
-            result := or(result, mul(_timestamp, 0x1000000000000000000000000000000000000000000000000))
-            result := or(result, mul(_address, 0x1000000000))
-            result := or(result, _gasLimit)
+            result := or(result, mul(_address, 0x1000000000000000000000000))
+            result := or(result, mul(and(_timestamp, 0xffffffff), 0x10000000000000000))
+            result := or(result, mul(and(_gasLimit, 0xffffffff), 0x100000000))
+            result := or(result, and(_gasPrice, 0xffffffff))
         }
     }
 
