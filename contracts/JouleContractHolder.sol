@@ -18,18 +18,21 @@ contract JouleContractHolder is usingConsts {
     }
 
     struct Object {
-        bytes32 next;
         address contractAddress;
-        uint gasLimit;
-        uint timestamp;
+        uint32 timestamp;
+        uint32 gasLimit;
+        uint32 gasPrice;
     }
 
     uint public length = 0;
     bytes32 public head = 0;
     mapping (bytes32 => Object) public objects;
 
+    function toKey(Object _obj) pure returns (bytes32) {
+        return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPrice);
+    }
+
     function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) pure returns (bytes32 result) {
-        var (year, month, day, hour, minute) = decomposeTimestamp(_timestamp);
         result = 0x0000000000000000000000000000000000000000000000000000000000000000;
         //         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - address
         //                                                 ^^^^^^^^ - timestamp
@@ -53,7 +56,7 @@ contract JouleContractHolder is usingConsts {
     }
 
     function insertInternal(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
-        bytes32 id = toKey(_address, _gasLimit, _timestamp);
+        bytes32 id = toKey(_address, _timestamp, _gasLimit, _gasPrice);
 
         bytes32 current = head;
         bytes32 prev = 0;
