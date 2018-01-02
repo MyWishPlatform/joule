@@ -1,8 +1,9 @@
 pragma solidity ^0.4.0;
 
 import 'ethereum-datetime/contracts/DateTime.sol';
+import './JouleConsts.sol';
 
-contract JouleContractHolder {
+contract JouleContractHolder is usingConsts {
 
     DateTime internal dt = new DateTime();
 
@@ -27,7 +28,7 @@ contract JouleContractHolder {
     bytes32 public head = 0;
     mapping (bytes32 => Object) public objects;
 
-    function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) constant returns (bytes32 result) {
+    function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) pure returns (bytes32 result) {
         var (year, month, day, hour, minute) = decomposeTimestamp(_timestamp);
         result = 0x0000000000000000000000000000000000000000000000000000000000000000;
         //         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - address
@@ -42,7 +43,14 @@ contract JouleContractHolder {
         }
     }
 
-    function insert(address _address, uint _gasLimit, uint _timestamp) {
+    function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external {
+        require(_timestamp < 0x100000000);
+        require(_gasLimit < 4300000);
+        require(_gasPrice < 0x100000000 * GWEI); // from 1 gwei to 0x100000000 gwei
+        insertInternal(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
+    }
+
+    function insertInternal(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
         require(_timestamp > now);
         bytes32 id = toKey(_address, _gasLimit, _timestamp);
 
