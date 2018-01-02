@@ -44,14 +44,15 @@ contract JouleContractHolder is usingConsts {
     }
 
     function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external {
+        require(_timestamp > now);
         require(_timestamp < 0x100000000);
         require(_gasLimit < 4300000);
+        require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI); // from 1 gwei to 0x100000000 gwei
         insertInternal(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
     }
 
     function insertInternal(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
-        require(_timestamp > now);
         bytes32 id = toKey(_address, _gasLimit, _timestamp);
 
         bytes32 current = head;
