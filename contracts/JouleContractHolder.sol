@@ -67,13 +67,14 @@ contract JouleContractHolder is usingConsts {
             }
 
             prev = current;
-            current = objects[current].next;
+            current = toKey(objects[current]);
         }
 
         if (prev == 0) {
             head = id;
         } else {
             objects[prev].next = id;
+            objects[id] = objects[prev];
         }
 
         Object memory object = Object(current, _address, _gasLimit, _timestamp);
