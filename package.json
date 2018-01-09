@@ -6,11 +6,7 @@
     "test": "test"
   },
   "scripts": {
-    "install": "napa",
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "napa": {
-    "ethereum-datetime": "pipermerriam/ethereum-datetime"
   },
   "author": "",
   "license": "ISC",
@@ -19,9 +15,7 @@
     "chai-as-promised": "^7.1.1",
     "ethereumjs-util": "^5.1.2",
     "ganache-cli": "^6.0.3",
+    "truffle": "^4.0.4",
     "zeppelin-solidity": "^1.4.0"
-  },
-  "devDependencies": {
-    "napa": "^3.0.0"
   }
 }

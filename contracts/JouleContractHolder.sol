@@ -1,21 +1,8 @@
 pragma solidity ^0.4.0;
 
-import 'ethereum-datetime/contracts/DateTime.sol';
 import './JouleConsts.sol';
 
 contract JouleContractHolder is usingConsts {
-
-    DateTime internal dt = new DateTime();
-
-    function decomposeTimestamp(uint _timestamp) constant returns (uint16, uint8, uint8, uint8, uint8) {
-        return (
-            dt.getYear(_timestamp),
-            dt.getMonth(_timestamp),
-            dt.getDay(_timestamp),
-            dt.getHour(_timestamp),
-            dt.getMinute(_timestamp)
-        );
-    }
 
     struct Object {
         address contractAddress;
@@ -25,8 +12,8 @@ contract JouleContractHolder is usingConsts {
     }
 
     uint public length = 0;
-    bytes32 public head = 0;
-    mapping (bytes32 => Object) public objects;
+    bytes32 head = 0;
+    mapping (bytes32 => Object) objects;
 
     function toKey(Object _obj) pure returns (bytes32) {
         return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPrice);
@@ -56,53 +43,40 @@ contract JouleContractHolder is usingConsts {
     }
 
     function insertInternal(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
-        bytes32 id = toKey(_address, _timestamp, _gasLimit, _gasPrice);
-
-        bytes32 current = head;
-        bytes32 prev = 0;
-
-        while (current != 0) {
-            if (_timestamp < objects[current].timestamp) {
-                break;
-            }
-
-            prev = current;
-            current = objects[current].next;
-        }
-
-        if (prev == 0) {
-            head = id;
-        } else {
-            objects[prev].next = id;
-        }
-
-        Object memory object = Object(current, _address, _gasLimit, _timestamp);
-        objects[id] = object;
-        length++;
+        // todo
     }
 
-    function getNext() constant returns (address _contract, uint _gasLimit, uint _timestamp) {
-        if (head != 0) {
-            Object object = objects[head];
-            _contract = object.contractAddress;
-            _gasLimit = object.gasLimit;
-            _timestamp = object.timestamp;
-        }
+    function removeNext() internal returns (Object) {
+        Object memory obj = getNext();
+        delete objects[head];
+        head = toKey(obj);
+        length--;
     }
 
-    function total() constant returns (address[] addresses, uint[] gasLimits, uint[] timestamps) {
-        addresses = new address[](length);
-        gasLimits = new uint[](length);
-        timestamps = new uint[](length);
+    function getNext() internal view returns (Object) {
+        return objects[head];
+    }
+
+    function getNext(uint count) external view returns (
+        address[] addresses,
+        uint32[] timestamps,
+        uint32[] gasLimits,
+        uint32[] gasPrices
+    ) {
+        addresses = new address[](count);
+        timestamps = new uint32[](count);
+        gasLimits = new uint32[](count);
+        gasPrices = new uint32[](count);
 
         bytes32 current = head;
         uint i = 0;
-        while (current != 0) {
+        while (i < count && i < length) {
             addresses[i] = objects[current].contractAddress;
-            gasLimits[i] = objects[current].gasLimit;
             timestamps[i] = objects[current].timestamp;
+            gasLimits[i] = objects[current].gasLimit;
+            gasPrices[i] = objects[current].gasPrice;
 
-            current = objects[current].next;
+            current = toKey(objects[current]);
             i++;
         }
     }
