@@ -8,8 +8,8 @@ contract JouleAPI {
 
     function getNext(uint count) external view returns (
         address[] addresses,
-        uint32[] timestamps,
-        uint32[] gasLimits,
-        uint32[] gasPrices
+        uint[] timestamps,
+        uint[] gasLimits,
+        uint[] gasPrices
     );
 }

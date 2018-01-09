@@ -12,7 +12,7 @@ contract Joule is JouleAPI, JouleContractHolder {
         uint remainingGas = msg.value;
         while (length != 0) {
             Object memory next = getNext();
-            if (remainingGas < next.gasLimit) {
+            if (remainingGas < next.gasLimit * next.gasPrice) {
                 break;
             }
             CheckableContract(next.contractAddress).check.value(next.gasLimit * next.gasPrice)();
