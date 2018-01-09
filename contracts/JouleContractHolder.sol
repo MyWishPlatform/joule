@@ -15,11 +15,11 @@ contract JouleContractHolder is usingConsts {
     bytes32 head = 0;
     mapping (bytes32 => Object) objects;
 
-    function toKey(Object _obj) pure returns (bytes32) {
+    function toKey(Object _obj) internal pure returns (bytes32) {
         return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPrice);
     }
 
-    function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) pure returns (bytes32 result) {
+    function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal pure returns (bytes32 result) {
         result = 0x0000000000000000000000000000000000000000000000000000000000000000;
         //         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - address
         //                                                 ^^^^^^^^ - timestamp
