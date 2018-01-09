@@ -43,7 +43,30 @@ contract JouleContractHolder is usingConsts {
     }
 
     function insertInternal(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
-        // todo
+        bytes32 id = toKey(_address, _timestamp, _gasLimit, _gasPrice);
+
+        bytes32 current = head;
+        bytes32 prev = 0;
+
+        while (current != 0) {
+            if (_timestamp < objects[current].timestamp) {
+                break;
+            }
+
+            prev = current;
+            current = toKey(objects[current]);
+        }
+
+        if (prev == 0) {
+            head = id;
+        } else {
+            objects[prev].next = id;
+            objects[id] = objects[prev];
+        }
+
+        Object memory object = Object(current, _address, _gasLimit, _timestamp);
+        objects[id] = object;
+        length++;
     }
 
     function removeNext() internal returns (Object) {
