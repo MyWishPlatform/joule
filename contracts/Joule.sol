@@ -6,9 +6,6 @@ import './CheckableContract.sol';
 
 contract Joule is JouleAPI, JouleContractHolder {
 
-    function Joule() public {
-    }
-
     function check(uint gasToSpend) external {
         uint remainingGas = gasToSpend;
         while (length > 0) {
