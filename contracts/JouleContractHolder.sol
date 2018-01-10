@@ -70,20 +70,22 @@ contract JouleContractHolder is usingConsts {
         return objects[head];
     }
 
-    function getNext(uint count) external view returns (
+    function getNext(uint _count) external view returns (
         address[] addresses,
         uint[] timestamps,
         uint[] gasLimits,
         uint[] gasPrices
     ) {
-        addresses = new address[](count);
-        timestamps = new uint[](count);
-        gasLimits = new uint[](count);
-        gasPrices = new uint[](count);
+        uint amount = _count <= length ? _count : length;
+
+        addresses = new address[](amount);
+        timestamps = new uint[](amount);
+        gasLimits = new uint[](amount);
+        gasPrices = new uint[](amount);
 
         bytes32 current = head;
         uint i = 0;
-        while (i < count && i < length) {
+        while (i < amount) {
             addresses[i] = objects[current].contractAddress;
             timestamps[i] = objects[current].timestamp;
             gasLimits[i] = objects[current].gasLimit;

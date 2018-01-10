@@ -2,27 +2,30 @@ const chai = require("chai");
 chai.use(require("chai-as-promised"));
 chai.should();
 const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
+const {printNextContracts, printTxLogs} = require('./jouleUtils');
 const {web3async} = require('./web3Utils');
 
 const Joule = artifacts.require("./Joule.sol");
+const CheckableContract = artifacts.require("./CheckableContractImpl.sol");
 
-const SECONDS = 1;
-const MINUTES = 60 * SECONDS;
-const HOURS = 60 * MINUTES;
-const DAYS = 24 * HOURS;
+const SECOND = 1;
+const MINUTE = 60 * SECOND;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 let NOW, TOMORROW, DAY_AFTER_TOMORROW;
 
 const initTime = (now) => {
     NOW = now;
-    TOMORROW = now + DAYS;
-    DAY_AFTER_TOMORROW = TOMORROW + DAYS;
+    TOMORROW = now + DAY;
+    DAY_AFTER_TOMORROW = TOMORROW + DAY;
 };
 
 initTime(new Date("2017-10-10T15:00:00Z").getTime() / 1000);
 
 contract('Joule', accounts => {
     const OWNER = accounts[0];
+    const BUYER_1 = accounts[1];
 
     let snapshotId;
 
@@ -37,7 +40,7 @@ contract('Joule', accounts => {
     });
 
     it('#1 insertion restrictions', async () => {
-        const joule = await Joule.deployed();
+        const joule = await Joule.new();
         const address = accounts[0];
 
         const gasLimit = 1000000;
@@ -47,8 +50,8 @@ contract('Joule', accounts => {
         const lowGasPrice = web3.toWei(0.5, 'gwei');
         const highGasPrice = web3.toWei(0x100000001, 'gwei');
 
-        const fiveMinutesInPast = NOW - 5 * MINUTES;
-        const fiveMinutesInFuture = NOW + 5 * MINUTES;
+        const fiveMinutesInPast = NOW - 5 * MINUTE;
+        const fiveMinutesInFuture = NOW + 5 * MINUTE;
 
         await joule.insert(address, fiveMinutesInPast, gasLimit, gasPrice).should.eventually.be.rejected;
         await joule.insert(address, fiveMinutesInFuture, highGasLimit, gasPrice).should.eventually.be.rejected;
@@ -57,12 +60,12 @@ contract('Joule', accounts => {
     });
 
     it('#2 correct insertion', async () => {
-        const joule = await Joule.deployed();
+        const joule = await Joule.new();
 
         const addresses = accounts;
         const gasLimit = 1000000;
         const gasPrice = web3.toWei(2, 'gwei');
-        const fiveMinutesInFuture = NOW + 5 * MINUTES;
+        const fiveMinutesInFuture = NOW + 5 * MINUTE;
 
         addresses.forEach(async (a) => {
             await joule.insert(a, fiveMinutesInFuture, gasLimit, gasPrice);
@@ -70,36 +73,100 @@ contract('Joule', accounts => {
     });
 
     it('#3 insert and get next', async () => {
-        const joule = await Joule.deployed();
+        const joule = await Joule.new();
 
         const addresses = accounts;
-        const timestamps = [7, 5, 9, 3].map(ts => NOW + ts * MINUTES);
-        const gasLimits = [1, 2, 3, 4].map(limit => limit * 1000000);
-        const gasPrices = [2, 3, 4, 5].map(price => web3.toWei(price, 'gwei'));
 
-        for (let i = 0; i < addresses.length; i++) {
-            for (let j = 0; j < timestamps.length; j++) {
-                await joule.insert(addresses[i], timestamps[j], gasLimits[j], gasPrices[j])
-            }
-        }
+        const gasLimit1 = 1000000;
+        const gasLimit2 = 2000000;
+        const gasLimit3 = 3000000;
+        const gasLimit4 = 4000000;
+
+        const gasPrice1 = web3.toWei(2, 'gwei');
+        const gasPrice2 = web3.toWei(3, 'gwei');
+        const gasPrice3 = web3.toWei(4, 'gwei');
+        const gasPrice4 = web3.toWei(5, 'gwei');
+
+        const after3minutes = NOW + 3 * MINUTE;
+        const after5minutes = NOW + 5 * MINUTE;
+        const after7minutes = NOW + 7 * MINUTE;
+        const after9minutes = NOW + 9 * MINUTE;
+
+        addresses.forEach(async (address) => {
+            await joule.insert(address, after7minutes, gasLimit1, gasPrice1);
+        });
+
+        addresses.forEach(async (address) => {
+            await joule.insert(address, after5minutes, gasLimit2, gasPrice2);
+        });
+
+        addresses.forEach(async (address) => {
+            await joule.insert(address, after9minutes, gasLimit3, gasPrice3);
+        });
+
+        addresses.forEach(async (address) => {
+            await joule.insert(address, after3minutes, gasLimit4, gasPrice4);
+        });
 
         const length = Number(await joule.length());
         length.should.be.greaterThan(0);
         const result = await joule.getNext(length);
 
-        for (let i = 0; i < timestamps.length; i++) {
-            for (let j = 0; j < result[0].length; j++) {
-                result[0][j].should.be.equals(addresses[j - addresses.length * i]);
-                Number(result[1][i]).should.be.equals(timestamps[i]);
-                Number(result[2][i]).should.be.equals(gasLimits[i]);
-                Number(result[3][i]).should.be.equals(gasPrices[i]);
-            }
+        for (let i = 0; i < addresses.length; i++) {
+            result[0][i].should.be.equals(addresses[i]);
+            Number(result[1][i]).should.be.equals(after3minutes);
+            Number(result[2][i]).should.be.equals(gasLimit4);
+            Number(result[3][i]).should.be.equals(Number(gasPrice4));
+        }
+        for (let i = addresses.length; i < addresses.length * 2; i++) {
+            result[0][i].should.be.equals(addresses[i - addresses.length]);
+            Number(result[1][i]).should.be.equals(after5minutes);
+            Number(result[2][i]).should.be.equals(gasLimit2);
+            Number(result[3][i]).should.be.equals(Number(gasPrice2));
+        }
+        for (let i = addresses.length * 2; i < addresses.length * 3; i++) {
+            result[0][i].should.be.equals(addresses[i - addresses.length * 2]);
+            Number(result[1][i]).should.be.equals(after7minutes);
+            Number(result[2][i]).should.be.equals(gasLimit1);
+            Number(result[3][i]).should.be.equals(Number(gasPrice1));
+        }
+        for (let i = addresses.length * 3; i < addresses.length * 4; i++) {
+            result[0][i].should.be.equals(addresses[i - addresses.length * 3]);
+            Number(result[1][i]).should.be.equals(after9minutes);
+            Number(result[2][i]).should.be.equals(gasLimit3);
+            Number(result[3][i]).should.be.equals(Number(gasPrice3));
         }
     });
 
     it('#4 check', async () => {
-        const joule = await Joule.deployed();
+        const joule = await Joule.new();
 
+        const address1 = (await CheckableContract.new()).address;
+        const address2 = (await CheckableContract.new()).address;
 
-    })
+        const timestamp1 = NOW + 3 * MINUTE;
+        const timestamp2 = NOW + 5 * MINUTE;
+
+        const gasLimit1 = 1000000;
+        const gasLimit2 = 2000000;
+
+        const gasPrice1 = web3.toWei(2, 'gwei');
+        const gasPrice2 = web3.toWei(3, 'gwei');
+
+        await joule.insert(address2, timestamp2, gasLimit2, gasPrice2);
+        await joule.insert(address1, timestamp1, gasLimit1, gasPrice1);
+
+        const nextContract = await joule.getNext(1);
+        const contractGas = nextContract[2][0] * nextContract[3][0];
+        await joule.check(Number(contractGas) + 1);
+
+        Number(await joule.length()).should.be.equals(1);
+
+        const result = await joule.getNext(1);
+        result[0][0].should.be.equals(address2);
+        Number(result[1][0]).should.be.equals(timestamp2);
+        Number(result[2][0]).should.be.equals(gasLimit2);
+        Number(result[3][0]).should.be.equals(Number(gasPrice2));
+    });
+
 });

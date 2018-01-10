@@ -4,7 +4,7 @@ contract JouleAPI {
 
     function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external;
 
-    function check() payable;
+    function check(uint gasToSpend) external;
 
     function getNext(uint count) external view returns (
         address[] addresses,

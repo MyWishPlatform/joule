@@ -6,17 +6,19 @@ import './CheckableContract.sol';
 
 contract Joule is JouleAPI, JouleContractHolder {
 
-    function Joule() {}
+    function Joule() public {
+    }
 
-    function check() payable {
-        uint remainingGas = msg.value;
-        while (length != 0) {
+    function check(uint gasToSpend) external {
+        uint remainingGas = gasToSpend;
+        while (length > 0) {
             Object memory next = getNext();
-            if (remainingGas < next.gasLimit * next.gasPrice) {
+            if (remainingGas < next.gasLimit * next.gasPrice * GWEI) {
                 break;
             }
-            CheckableContract(next.contractAddress).check.value(next.gasLimit * next.gasPrice)();
-            remainingGas -= next.gasLimit * next.gasPrice;
+            CheckableContract(next.contractAddress).check();
+            removeNext();
+            remainingGas -= (next.gasLimit * next.gasPrice * GWEI);
         }
     }
 }
