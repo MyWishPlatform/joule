@@ -11,8 +11,8 @@ contract JouleContractHolder is usingConsts {
         uint32 gasPrice;
     }
 
-    uint public length = 0;
-    bytes32 head = 0;
+    uint public length;
+    bytes32 head;
     mapping (bytes32 => Object) objects;
 
     function toKey(Object _obj) internal pure returns (bytes32) {
@@ -39,37 +39,27 @@ contract JouleContractHolder is usingConsts {
         require(_gasLimit < 4300000);
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI); // from 1 gwei to 0x100000000 gwei
-        insertInternal(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
+        insertInternal(_address, uint32(_timestamp), uint32(_gasLimit), uint32(_gasPrice / GWEI));
     }
 
-    function insertInternal(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
+    function insertInternal(address _address, uint32 _timestamp, uint32 _gasLimit, uint32 _gasPrice) internal {
         bytes32 id = toKey(_address, _timestamp, _gasLimit, _gasPrice);
-
         bytes32 current = head;
-        bytes32 prev = 0;
 
-        while (current != 0) {
+        for (uint i = 0; i < length; i++) {
             if (_timestamp < objects[current].timestamp) {
                 break;
             }
 
-            prev = current;
             current = toKey(objects[current]);
         }
 
-        if (prev == 0) {
-            head = id;
-        } else {
-            objects[prev].next = id;
-            objects[id] = objects[prev];
-        }
-
-        Object memory object = Object(current, _address, _gasLimit, _timestamp);
-        objects[id] = object;
+        objects[id] = objects[current];
+        objects[current] = Object(_address, _timestamp, _gasLimit, _gasPrice);
         length++;
     }
 
-    function removeNext() internal returns (Object) {
+    function removeNext() internal {
         Object memory obj = getNext();
         delete objects[head];
         head = toKey(obj);
