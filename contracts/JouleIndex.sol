@@ -1,13 +1,13 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.19;
 
 import "./KeysUtils.sol";
 
 contract JouleIndex {
+    using KeysUtils for bytes32;
+
     // year -> month -> day -> hour
     mapping (bytes32 => bytes32) index;
     bytes32 head;
-
-    using KeysUtils for bytes32;
 
     function insert(bytes32 _key) public {
         uint timestamp = _key.getTimestamp();
@@ -276,7 +276,7 @@ contract JouleIndex {
     }
 
 
-    function toKey(uint timestamp) view internal returns (bytes32) {
+    function toKey(uint timestamp) pure internal returns (bytes32) {
         return bytes32(timestamp);
     }
 }

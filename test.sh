@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -e
-node node_modules/.bin/truffle test
+node_modules/.bin/truffle test
