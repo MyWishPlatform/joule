@@ -24,7 +24,7 @@ contract Joule is JouleAPI, JouleContractHolder {
 
     function check() external {
         while (length > 0) {
-            Object memory next = getNext();
+            KeysUtils.Object memory next = getNext();
             if (msg.gas < next.gasLimit) {
                 break;
             }

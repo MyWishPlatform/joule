@@ -96,6 +96,8 @@ contract('Joule', accounts => {
     it('#3 register and get next', async () => {
         const joule = await Joule.new();
 
+        // Number(await joule.length()).should.be.equals(0);
+
         addresses.forEach(async (address) => {
             await joule.register(address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
         });
@@ -113,7 +115,7 @@ contract('Joule', accounts => {
         });
 
         const length = Number(await joule.length());
-        length.should.be.greaterThan(0);
+        length.should.be.equals(addresses.length * 4);
         const result = await joule.getNext(length);
 
         for (let i = 0; i < addresses.length; i++) {
