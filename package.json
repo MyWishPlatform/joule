@@ -15,6 +15,7 @@
     "chai-as-promised": "^7.1.1",
     "ethereumjs-util": "^5.1.2",
     "ganache-cli": "^6.0.3",
+    "random-seed": "^0.3.0",
     "solc": "^0.4.19",
     "truffle": "^4.0.4",
     "zeppelin-solidity": "^1.5.0"

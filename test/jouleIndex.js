@@ -73,4 +73,21 @@ contract('JouleIndex', accounts => {
         }
     });
 
+    it('#2 find single', async () => {
+        const index = await JouleIndex.new();
+
+        const ts = new Date("2017-10-20T15:00:00Z").getTime() / 1000;
+
+        await index.insert(toKey(ts));
+
+        const zeroKey = await index.findFloorKey(ts - 1);
+        String(zeroKey).should.be.equals(BYTES32_ZERO, "before ts must be empty");
+
+        const exactKey = await index.findFloorKey(ts);
+        String(exactKey).should.be.equals(toKey(ts), "exact ts must be the same");
+
+        const nextKey = await index.findFloorKey(ts);
+        String(nextKey).should.be.equals(toKey(ts), "next ts must be the same");
+    });
+
 });
