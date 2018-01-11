@@ -6,6 +6,7 @@ const {web3async} = require('./web3Utils');
 
 const JouleIndex = artifacts.require("./JouleIndex.sol");
 
+const BYTES32_ZERO = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const SECOND = 1;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
@@ -27,7 +28,7 @@ contract('JouleIndex', accounts => {
     let snapshotId;
 
     function toKey(timestamp) {
-        return OWNER + ("00000000" + Number(timestamp).toString(16)).substr(-4, 8) + "0000ac00" + "00000020";
+        return OWNER + ("00000000" + Number(timestamp).toString(16)).substr(-8, 8) + "0000ac00" + "00000020";
     }
 
     beforeEach(async () => {
@@ -40,7 +41,7 @@ contract('JouleIndex', accounts => {
         await revert(snapshotId);
     });
 
-    it('#1 smoke test', async () => {
+    it('#1 insert and find', async () => {
         const index = await JouleIndex.new();
 
         const dates = [
@@ -61,10 +62,10 @@ contract('JouleIndex', accounts => {
         }
 
         for (const i in dates) {
-            const ts = dates[i];
+            const ts = dates[i] - 1;
             const key = await index.findFloorKey(ts);
-            if (i === 0) {
-                Number(key).should.be.equals(0);
+            if (Number(i) === 0) {
+                String(key).should.be.equals(BYTES32_ZERO);
             }
             else {
                 String(key).should.be.equals(toKey(dates[i - 1]));
