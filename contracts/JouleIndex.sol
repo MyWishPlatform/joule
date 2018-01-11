@@ -9,7 +9,7 @@ contract JouleIndex {
 
     using KeysUtils for bytes32;
 
-    function insert(bytes32 _key) {
+    function insert(bytes32 _key) public {
         uint timestamp = _key.getTimestamp();
         bytes32 year = toKey(timestamp, 1 years);
         bytes32 headLow;
@@ -78,7 +78,7 @@ contract JouleIndex {
         index[tsKey] = _key;
     }
 
-    function findFloorKeyYear(uint _timestamp, bytes32 _low, bytes32 _high) view public returns (bytes32) {
+    function findFloorKeyYear(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
         bytes32 year = toKey(_timestamp, 1 years);
         if (year < _low) {
             return 0;
@@ -115,7 +115,7 @@ contract JouleIndex {
         return 0;
     }
 
-    function findFloorKeyWeek(uint _timestamp, bytes32 _low, bytes32 _high) view returns (bytes32) {
+    function findFloorKeyWeek(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
         bytes32 week = toKey(_timestamp, 1 weeks);
         if (week < _low) {
             return 0;
@@ -152,7 +152,7 @@ contract JouleIndex {
     }
 
 
-    function findFloorKeyHour(uint _timestamp, bytes32 _low, bytes32 _high) view returns (bytes32) {
+    function findFloorKeyHour(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
         bytes32 hour = toKey(_timestamp, 1 hours);
         if (hour < _low) {
             return 0;
@@ -186,7 +186,7 @@ contract JouleIndex {
         return 0;
     }
 
-    function findFloorKeyMinute(uint _timestamp, bytes32 _low, bytes32 _high) view returns (bytes32) {
+    function findFloorKeyMinute(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
         bytes32 minute = toKey(_timestamp, 1 minutes);
         if (minute < _low) {
             return 0;
@@ -219,7 +219,7 @@ contract JouleIndex {
         return 0;
     }
 
-    function findFloorKeyTimestamp(uint _timestamp, bytes32 _low, bytes32 _high) view returns (bytes32) {
+    function findFloorKeyTimestamp(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
         bytes32 tsKey = toKey(_timestamp);
         if (tsKey < _low) {
             return 0;
@@ -250,9 +250,6 @@ contract JouleIndex {
 //            return 0;
 //        }
 
-        bytes32 low;
-        bytes32 high;
-
         bytes32 yearLow;
         bytes32 yearHigh;
         (yearLow, yearHigh) = fromValue(head);
@@ -260,7 +257,7 @@ contract JouleIndex {
         return findFloorKeyYear(_timestamp, yearLow, yearHigh);
     }
 
-    function toKey(uint _timestamp, uint rounder) pure returns (bytes32 result) {
+    function toKey(uint _timestamp, uint rounder) pure internal returns (bytes32 result) {
         // 0x0...00000000000000000
         //        ^^^^^^^^ - rounder marker (eg, to avoid crossing first day of year with year)
         //                ^^^^^^^^ - rounded moment (year, week, etc)
@@ -269,13 +266,13 @@ contract JouleIndex {
         }
     }
 
-    function toValue(bytes32 _lowKey, bytes32 _highKey) pure returns (bytes32 result) {
+    function toValue(bytes32 _lowKey, bytes32 _highKey) pure internal returns (bytes32 result) {
         assembly {
             result := or(mul(_lowKey, 0x10000000000000000), _highKey)
         }
     }
 
-    function fromValue(bytes32 _value) pure returns (bytes32 _lowKey, bytes32 _highKey) {
+    function fromValue(bytes32 _value) pure internal returns (bytes32 _lowKey, bytes32 _highKey) {
         assembly {
             _lowKey := and(div(_value, 0x10000000000000000), 0xffffffffffffffff)
             _highKey := and(_value, 0xffffffffffffffff)
@@ -283,7 +280,7 @@ contract JouleIndex {
     }
 
 
-    function toKey(uint timestamp) view returns (bytes32) {
+    function toKey(uint timestamp) view internal returns (bytes32) {
         return bytes32(timestamp);
     }
 }
