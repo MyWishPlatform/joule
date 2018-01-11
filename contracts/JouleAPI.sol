@@ -2,9 +2,9 @@ pragma solidity ^0.4.0;
 
 contract JouleAPI {
 
-    function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external;
+    function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable;
 
-    function check(uint gasToSpend) external;
+    function check() external;
 
     function getNext(uint count) external view returns (
         address[] addresses,

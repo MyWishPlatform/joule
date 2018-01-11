@@ -1,72 +1,31 @@
 pragma solidity ^0.4.0;
 
 import './JouleConsts.sol';
+import './JouleIndex.sol';
 
-contract JouleContractHolder is usingConsts {
-
-    struct Object {
-        address contractAddress;
-        uint32 timestamp;
-        uint32 gasLimit;
-        uint32 gasPrice;
-    }
+contract JouleContractHolder is usingConsts, JouleIndex {
 
     uint public length;
     bytes32 head;
-    mapping (bytes32 => Object) objects;
+    mapping (bytes32 => KeysUtils.Object) objects;
 
-    function toKey(Object _obj) internal pure returns (bytes32) {
-        return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPrice);
-    }
-
-    function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal pure returns (bytes32 result) {
-        result = 0x0000000000000000000000000000000000000000000000000000000000000000;
-        //         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - address
-        //                                                 ^^^^^^^^ - timestamp
-        //                                                         ^^^^^^^^ - gas limit
-        //                                                                 ^^^^^^^^ - gas price
-        assembly {
-            result := or(result, mul(_address, 0x1000000000000000000000000))
-            result := or(result, mul(and(_timestamp, 0xffffffff), 0x10000000000000000))
-            result := or(result, mul(and(_gasLimit, 0xffffffff), 0x100000000))
-            result := or(result, and(_gasPrice, 0xffffffff))
-        }
-    }
-
-    function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external {
-        require(_timestamp > now);
-        require(_timestamp < 0x100000000);
-        require(_gasLimit < 4300000);
-        require(_gasPrice > GWEI);
-        require(_gasPrice < 0x100000000 * GWEI); // from 1 gwei to 0x100000000 gwei
-        insertInternal(_address, uint32(_timestamp), uint32(_gasLimit), uint32(_gasPrice / GWEI));
-    }
-
-    function insertInternal(address _address, uint32 _timestamp, uint32 _gasLimit, uint32 _gasPrice) internal {
-        bytes32 id = toKey(_address, _timestamp, _gasLimit, _gasPrice);
-        bytes32 current = head;
-
-        for (uint i = 0; i < length; i++) {
-            if (_timestamp < objects[current].timestamp) {
-                break;
-            }
-
-            current = toKey(objects[current]);
-        }
-
+    function insert(address _address, uint32 _timestamp, uint32 _gasLimit, uint32 _gasPrice) internal {
+        bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
+        bytes32 current = findFloorKey(_timestamp);
         objects[id] = objects[current];
-        objects[current] = Object(_address, _timestamp, _gasLimit, _gasPrice);
+        objects[current] = KeysUtils.Object(_gasPrice, _gasLimit, _timestamp, _address);
+        super.insert(id);
         length++;
     }
 
     function removeNext() internal {
-        Object memory obj = getNext();
+        KeysUtils.Object memory obj = getNext();
         delete objects[head];
-        head = toKey(obj);
+        head = KeysUtils.toKey(obj);
         length--;
     }
 
-    function getNext() internal view returns (Object) {
+    function getNext() internal view returns (KeysUtils.Object) {
         return objects[head];
     }
 
@@ -91,7 +50,7 @@ contract JouleContractHolder is usingConsts {
             gasLimits[i] = objects[current].gasLimit;
             gasPrices[i] = objects[current].gasPrice * GWEI;
 
-            current = toKey(objects[current]);
+            current = KeysUtils.toKey(objects[current]);
             i++;
         }
     }
