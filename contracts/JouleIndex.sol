@@ -228,10 +228,6 @@ contract JouleIndex {
             return index[_high];
         }
 
-        assembly {
-            tsKey := sub(tsKey, 1)
-        }
-
         while (tsKey >= _low) {
             bytes32 key = index[tsKey];
             if (key != 0) {
