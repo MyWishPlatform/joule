@@ -315,4 +315,20 @@ contract('Joule', accounts => {
 
         Number(await joule.length()).should.be.equals(1);
     });
+
+    it('#13 write-off of funds when check', async () => {
+        const joule = await Joule.new();
+        const address = (await Contract100kGas.new()).address;
+
+        const balanceBeforeRegister = await web3async(web3.eth, web3.eth.getBalance, OWNER);
+        const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+
+        Number(await joule.length()).should.be.equals(1);
+
+        const newBalance = await web3async(web3.eth, web3.eth.getBalance, OWNER);
+        const gasPrice = web3.toWei(100, 'gwei');
+        Number(newBalance.add(gasLimit1 * gasPrice1).add(tx.receipt.gasUsed * gasPrice)).should.be.equals(Number(balanceBeforeRegister));
+    });
+
+
 });
