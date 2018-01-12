@@ -291,4 +291,28 @@ contract('Joule', accounts => {
 
         Number(await joule.length()).should.be.equals(1);
     });
+
+    it('#11 check with extra gas but not in time', async () => {
+        const joule = await Joule.new();
+        const address = (await Contract100kGas.new()).address;
+
+        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await increaseTime(4 * MINUTE);
+        await joule.check({gas: Number(gasLimit1 * 2 + 100000)});
+
+        Number(await joule.length()).should.be.equals(1);
+    });
+
+    it('#12 check with extra time but with insufficient gas', async () => {
+        const joule = await Joule.new();
+        const address = (await Contract100kGas.new()).address;
+
+        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await increaseTime(6 * MINUTE);
+        await joule.check({gas: Number(gasLimit1 + 100000)});
+
+        Number(await joule.length()).should.be.equals(1);
+    });
 });
