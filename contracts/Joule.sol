@@ -25,9 +25,10 @@ contract Joule is JouleAPI, JouleContractHolder {
     function check() external {
         while (length > 0) {
             KeysUtils.Object memory next = getNext();
-            if (msg.gas < next.gasLimit) {
+            if (next.timestamp > now || msg.gas < next.gasLimit) {
                 break;
             }
+
             CheckableContract(next.contractAddress).check();
             removeNext();
         }
