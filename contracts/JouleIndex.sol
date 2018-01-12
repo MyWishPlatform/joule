@@ -4,6 +4,7 @@ import "./KeysUtils.sol";
 
 contract JouleIndex {
     using KeysUtils for bytes32;
+    uint constant YEAR = 0x1DFE200;
 
     // year -> month -> day -> hour
     mapping (bytes32 => bytes32) index;
@@ -11,7 +12,7 @@ contract JouleIndex {
 
     function insert(bytes32 _key) public {
         uint timestamp = _key.getTimestamp();
-        bytes32 year = toKey(timestamp, 1 years);
+        bytes32 year = toKey(timestamp, YEAR);
         bytes32 headLow;
         bytes32 headHigh;
         (headLow, headHigh) = fromValue(head);
@@ -79,7 +80,7 @@ contract JouleIndex {
     }
 
     function findFloorKeyYear(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
-        bytes32 year = toKey(_timestamp, 1 years);
+        bytes32 year = toKey(_timestamp, YEAR);
         if (year < _low) {
             return 0;
         }
@@ -106,9 +107,9 @@ contract JouleIndex {
                     return key;
                 }
             }
-            // 0x1e13380 = 1 years
+            // 0x1DFE200 = 52 weeks = 31449600
             assembly {
-                year := sub(year, 0x1e13380)
+                year := sub(year, 0x1DFE200)
             }
         }
 
