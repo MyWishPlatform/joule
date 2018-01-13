@@ -86,8 +86,44 @@ contract('JouleIndex', accounts => {
         const exactKey = await index.findFloorKey(ts);
         String(exactKey).should.be.equals(toKey(ts), "exact ts must be the same");
 
-        const nextKey = await index.findFloorKey(ts);
+        const nextKey = await index.findFloorKey(ts + 1);
         String(nextKey).should.be.equals(toKey(ts), "next ts must be the same");
+    });
+
+    it('#3 gas calculation, worst case', async () => {
+        // the worst case when we on week level has two values: the first week and the last in the year
+        // and try to find pre last week ts, where week is 604800 seconds
+        // year is 31449600
+        const index = await JouleIndex.new();
+
+        const first = new Date("2016-12-20T03:00:00").getTime() / 1000;
+        const next = new Date("2016-12-27T03:00:01").getTime() / 1000;
+        // const second = new Date("2017-06-20T03:00:00").getTime() / 1000;
+        // const prelast = new Date("2017-10-26T02:00:00").getTime() / 1000;
+        const prelast = new Date("2017-11-02T02:59:58").getTime() / 1000;
+        const last = new Date("2017-11-02T02:59:59").getTime() / 1000;
+        const nextYear = new Date("2017-11-02T03:00:00").getTime() / 1000;
+
+        const firstInsertGas = await index.insert.estimateGas(toKey(first));
+        console.info("first insert: ", firstInsertGas, "gas");
+        await index.insert(toKey(first));
+        const sameYearGas = await index.insert.estimateGas(toKey(last));
+        console.info("next insert: ", sameYearGas, "gas");
+        await index.insert(toKey(last));
+        const nextYearGas = await index.insert.estimateGas(toKey(nextYear));
+        console.info("new year insert: ", nextYearGas, "gas");
+
+        const firstKey = await index.findFloorKey(next);
+        String(firstKey).should.be.equals(toKey(first));
+
+        const normalCaseGas = await index.findFloorKey.estimateGas(next);
+        console.info("normal search: ", normalCaseGas, "gas");
+
+        const worstCaseGas = await index.findFloorKey.estimateGas(prelast);
+        console.info("worst search: ", worstCaseGas, "gas");
+
+        const firstKeyAgain = await index.findFloorKey(prelast);
+        String(firstKeyAgain).should.be.equals(toKey(first));
     });
 
 });

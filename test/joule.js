@@ -3,7 +3,7 @@ chai.use(require("chai-as-promised"));
 chai.should();
 const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
 const {printNextContracts, printTxLogs} = require('./jouleUtils');
-const {web3async} = require('./web3Utils');
+const {web3async, getBalance} = require('./web3Utils');
 
 const Joule = artifacts.require("./Joule.sol");
 const Contract100kGas = artifacts.require("./Contract100kGas.sol");
@@ -28,6 +28,7 @@ initTime(new Date("2017-10-10T15:00:00Z").getTime() / 1000);
 
 contract('Joule', accounts => {
     const OWNER = accounts[0];
+    const SENDER = accounts[1];
 
     const addresses = accounts;
 
@@ -163,7 +164,12 @@ contract('Joule', accounts => {
         await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
         await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
         await increaseTime(6 * MINUTE);
-        await joule.check({gas: Number(gasLimit1 + 50000)});
+        const balanceBefore = await getBalance(SENDER);
+        await joule.check({gas: Number(gasLimit1 + 50000), from: SENDER});
+        const nowBalance = await getBalance(SENDER);
+
+        String(balanceBefore).should.be.gte(String(nowBalance), "amount for the gas should be returned");
+        console.info(balanceBefore, nowBalance);
 
         Number(await joule.length()).should.be.equals(1);
 

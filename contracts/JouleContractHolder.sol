@@ -11,16 +11,21 @@ contract JouleContractHolder is usingConsts, JouleIndex {
 
     function insert(address _address, uint32 _timestamp, uint32 _gasLimit, uint32 _gasPrice) internal {
         bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
-        bytes32 current = findFloorKey(_timestamp);
-        objects[id] = objects[current];
-        objects[current] = KeysUtils.Object(_gasPrice, _gasLimit, _timestamp, _address);
+        bytes32 previous = findFloorKey(_timestamp);
+        uint prevTimestamp = KeysUtils.getTimestamp(previous);
+        uint headTimestamp = KeysUtils.getTimestamp(head);
+        if (prevTimestamp < headTimestamp) {
+            previous = head;
+        }
+        objects[id] = objects[previous];
+        objects[previous] = KeysUtils.Object(_gasPrice, _gasLimit, _timestamp, _address);
         super.insert(id);
         length++;
     }
 
     function removeNext() internal {
         KeysUtils.Object memory obj = getNext();
-        delete objects[head];
+//        delete objects[head];
         head = KeysUtils.toKey(obj);
         length--;
     }
@@ -43,15 +48,13 @@ contract JouleContractHolder is usingConsts, JouleIndex {
         gasPrices = new uint[](amount);
 
         bytes32 current = head;
-        uint i = 0;
-        while (i < amount) {
+        for (uint i = 0; i < amount; i ++) {
             addresses[i] = objects[current].contractAddress;
             timestamps[i] = objects[current].timestamp;
             gasLimits[i] = objects[current].gasLimit;
             gasPrices[i] = objects[current].gasPrice * GWEI;
 
             current = KeysUtils.toKey(objects[current]);
-            i++;
         }
     }
 }

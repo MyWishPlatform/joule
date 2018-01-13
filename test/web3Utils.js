@@ -37,5 +37,17 @@ module.exports = {
         return estimateConstructGasWithValue.apply(this, args);
     },
 
-    estimateConstructGasWithValue: estimateConstructGasWithValue
+    estimateConstructGasWithValue: estimateConstructGasWithValue,
+
+    getBalance: (address) => {
+        return new Promise((resolve, reject) => {
+            web3.eth.getBalance(address, function (error, result) {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
 };
