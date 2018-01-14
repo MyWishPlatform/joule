@@ -16,21 +16,23 @@ const estimateConstructGasWithValue = (target, value, ...args) => {
     });
 };
 
-module.exports = {
-    web3async: (that, func, ...args) => {
-        return new Promise((resolve, reject) => {
-            args.push(
-                function (error, result) {
-                    if (error) {
-                        reject(error);
-                    } else {
-                        resolve(result);
-                    }
+const web3async = (that, func, ...args) => {
+    return new Promise((resolve, reject) => {
+        args.push(
+            function (error, result) {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(result);
                 }
-            );
-            func.apply(that, args);
-        });
-    },
+            }
+        );
+        func.apply(that, args);
+    });
+};
+
+module.exports = {
+    web3async: web3async,
     estimateConstructGas: (target, ...args) => {
         args.unshift(0);
         args.unshift(target);
@@ -39,15 +41,5 @@ module.exports = {
 
     estimateConstructGasWithValue: estimateConstructGasWithValue,
 
-    getBalance: (address) => {
-        return new Promise((resolve, reject) => {
-            web3.eth.getBalance(address, function (error, result) {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
-    }
+    getBalance: (address) => web3async(web3.eth, web3.eth.getBalance, address)
 };

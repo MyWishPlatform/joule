@@ -3,9 +3,11 @@ chai.use(require("chai-as-promised"));
 chai.should();
 const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
 const {printNextContracts, printTxLogs} = require('./jouleUtils');
-const {web3async, getBalance} = require('./web3Utils');
+const utils = require('./web3Utils');
+const BigNumber = require('bignumber.js');
 
 const Joule = artifacts.require("./Joule.sol");
+const Contract0kGas = artifacts.require("./Contract0kGas.sol");
 const Contract100kGas = artifacts.require("./Contract100kGas.sol");
 const Contract200kGas = artifacts.require("./Contract200kGas.sol");
 const Contract300kGas = artifacts.require("./Contract300kGas.sol");
@@ -51,12 +53,46 @@ contract('Joule', accounts => {
 
     beforeEach(async () => {
         snapshotId = (await snapshot()).result;
-        const latestBlock = await web3async(web3.eth, web3.eth.getBlock, 'latest');
+        const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
         initTime(latestBlock.timestamp);
     });
 
     afterEach(async () => {
         await revert(snapshotId);
+    });
+
+    it('#0 gas usage', async() => {
+        const joule = await Joule.new();
+        const address0k = (await Contract0kGas.new()).address;
+        const address100k = (await Contract100kGas.new()).address;
+
+        const gasLimit = BigNumber(100000);
+        const gasPrice = web3.toWei(BigNumber(40), 'gwei');
+        const value = gasPrice.times(gasLimit);
+
+        await joule.register(address0k, fiveMinutesInFuture, gasLimit, gasPrice, {value: value});
+        await joule.register(address100k, sevenMinutesInFuture, gasLimit, gasPrice, {value: value});
+
+        console.info(String(await joule.length()));
+        const gasIdle = await joule.check.estimateGas({gas: gasLimit.times(2)});
+
+        await increaseTime(6 * MINUTE);
+
+        const gas0kCheck = await joule.check.estimateGas({gas: gasLimit.times(2)});
+        const tx = await joule.check({gas: gasLimit.times(2)});
+
+        console.info('length:', String(await joule.length()));
+        console.info('events:', tx.logs);
+
+        await increaseTime(2 * MINUTE);
+
+        const gas100kCheck = await joule.check.estimateGas({gas: gasLimit.times(2)});
+        console.info(await joule.length());
+
+        console.info('Gas usages:');
+        console.info("\tidle:", gasIdle);
+        console.info("\tsingle empty check:", gas0kCheck);
+        console.info("\tsingle 100k check:", gas100kCheck);
     });
 
     it('#1 registration restrictions', async () => {
@@ -164,15 +200,21 @@ contract('Joule', accounts => {
         await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
         await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
         await increaseTime(6 * MINUTE);
-        const balanceBefore = await getBalance(SENDER);
+        console.info("get balance");
+        const balanceBefore = await utils.getBalance(SENDER);
+        console.info("check");
         await joule.check({gas: Number(gasLimit1 + 50000), from: SENDER});
-        const nowBalance = await getBalance(SENDER);
+        console.info("get balance");
+        const nowBalance = await utils.getBalance(SENDER);
+        console.info("done");
 
-        String(balanceBefore).should.be.gte(String(nowBalance), "amount for the gas should be returned");
+        Number(nowBalance).should.be.gte(Number(balanceBefore), "amount for the gas should be returned");
         console.info(balanceBefore, nowBalance);
 
+        console.info("get length");
         Number(await joule.length()).should.be.equals(1);
 
+        console.info("get next");
         const result = await joule.getNext(1);
         result[0][0].should.be.equals(address2);
         Number(result[1][0]).should.be.equals(fiveMinutesInFuture);
@@ -326,12 +368,12 @@ contract('Joule', accounts => {
         const joule = await Joule.new();
         const address = (await Contract100kGas.new()).address;
 
-        const balanceBeforeRegister = await web3async(web3.eth, web3.eth.getBalance, OWNER);
+        const balanceBeforeRegister = await utils.getBalance(OWNER);
         const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
 
         Number(await joule.length()).should.be.equals(1);
 
-        const newBalance = await web3async(web3.eth, web3.eth.getBalance, OWNER);
+        const newBalance = await utils.getBalance(OWNER);
         const gasPrice = web3.toWei(100, 'gwei');
         Number(newBalance.add(gasLimit1 * gasPrice1).add(tx.receipt.gasUsed * gasPrice)).should.be.equals(Number(balanceBeforeRegister));
     });
