@@ -1,37 +1,42 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.19;
 
 import './JouleConsts.sol';
 import './JouleIndex.sol';
 
-contract JouleContractHolder is usingConsts, JouleIndex {
+contract JouleContractHolder is usingConsts {
 
     uint public length;
     bytes32 head;
     mapping (bytes32 => KeysUtils.Object) objects;
+    JouleIndex index;
 
-    function insert(address _address, uint32 _timestamp, uint32 _gasLimit, uint32 _gasPrice) internal {
+    function JouleContractHolder() public {
+        index = new JouleIndex();
+    }
+
+    function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
+        length ++;
         bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
-        bytes32 previous = findFloorKey(_timestamp);
+        if (head == 0) {
+            head = id;
+            index.insert(id);
+            return;
+        }
+        bytes32 previous = index.findFloorKey(_timestamp);
         uint prevTimestamp = KeysUtils.getTimestamp(previous);
         uint headTimestamp = KeysUtils.getTimestamp(head);
         if (prevTimestamp < headTimestamp) {
             previous = head;
         }
         objects[id] = objects[previous];
-        objects[previous] = KeysUtils.Object(_gasPrice, _gasLimit, _timestamp, _address);
-        super.insert(id);
-        length++;
+        objects[previous] = KeysUtils.Object(uint32(_gasPrice), uint32(_gasLimit), uint32(_timestamp), _address);
+        index.insert(id);
     }
 
-    function removeNext() internal {
-        KeysUtils.Object memory obj = getNext();
-//        delete objects[head];
-        head = KeysUtils.toKey(obj);
+    function next() internal returns (KeysUtils.Object storage _next) {
+        _next = objects[head];
+        head = KeysUtils.toKeyFromStorage(_next);
         length--;
-    }
-
-    function getNext() internal view returns (KeysUtils.Object) {
-        return objects[head];
     }
 
     function getNext(uint _count) external view returns (
@@ -49,11 +54,11 @@ contract JouleContractHolder is usingConsts, JouleIndex {
 
         bytes32 current = head;
         for (uint i = 0; i < amount; i ++) {
-            addresses[i] = objects[current].contractAddress;
-            timestamps[i] = objects[current].timestamp;
-            gasLimits[i] = objects[current].gasLimit;
-            gasPrices[i] = objects[current].gasPrice * GWEI;
-
+            KeysUtils.Object memory obj = KeysUtils.toObject(current);
+            addresses[i] = obj.contractAddress;
+            timestamps[i] = obj.timestamp;
+            gasLimits[i] = obj.gasLimit;
+            gasPrices[i] = obj.gasPrice;
             current = KeysUtils.toKey(objects[current]);
         }
     }

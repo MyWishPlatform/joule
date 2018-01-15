@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.19;
 
 library KeysUtils {
     // Such order is important to load from state
@@ -11,6 +11,12 @@ library KeysUtils {
 
     function toKey(Object _obj) internal pure returns (bytes32) {
         return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPrice);
+    }
+
+    function toKeyFromStorage(Object storage _obj) internal view returns (bytes32 _key) {
+        assembly {
+            _key := sload(_obj_slot)
+        }
     }
 
     function toKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal pure returns (bytes32 result) {
@@ -32,7 +38,7 @@ library KeysUtils {
             mstore(_dest, and(_key, 0xffffffff))
             mstore(add(_dest, 0x20), and(div(_key, 0x100000000), 0xffffffff))
             mstore(add(_dest, 0x40), and(div(_key, 0x10000000000000000), 0xffffffff))
-            mstore(add(_dest, 0x60), and(div(_key, 0x1000000000000000000000000), 0xffffffff))
+            mstore(add(_dest, 0x60), div(_key, 0x1000000000000000000000000))
         }
     }
 
