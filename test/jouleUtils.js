@@ -4,7 +4,7 @@ module.exports = {
             count = Number(await joule.length());
         }
 
-        const result = await joule.getNext(count);
+        const result = await joule.getTop(count);
 
         if (result[0].length === 0) {
             console.info('No contracts');

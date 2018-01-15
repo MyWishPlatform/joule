@@ -47,7 +47,7 @@ contract JouleContractHolder is usingConsts {
         _next = head.toObject();
     }
 
-    function getNext(uint _count) external view returns (
+    function getTop(uint _count) external view returns (
         address[] addresses,
         uint[] timestamps,
         uint[] gasLimits,
@@ -69,5 +69,19 @@ contract JouleContractHolder is usingConsts {
             gasPrices[i] = obj.gasPriceGwei * GWEI;
             current = objects[current];
         }
+    }
+
+    function getTop() external view returns (
+        address contractAddress,
+        uint timestamp,
+        uint gasLimit,
+        uint gasPrice
+    ) {
+        KeysUtils.Object memory obj = head.toObject();
+
+        contractAddress = obj.contractAddress;
+        timestamp = obj.timestamp;
+        gasLimit = obj.gasLimit;
+        gasPrice = obj.gasPriceGwei * GWEI;
     }
 }

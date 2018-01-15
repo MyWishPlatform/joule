@@ -5,7 +5,6 @@ import './JouleContractHolder.sol';
 import './CheckableContract.sol';
 
 contract Joule is JouleAPI, JouleContractHolder {
-
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable {
         uint price = this.getPrice(_gasLimit, _gasPrice);
         require(msg.value >= price);
@@ -36,17 +35,34 @@ contract Joule is JouleAPI, JouleContractHolder {
         return (_gasLimit + IDLE_GAS) * _gasPrice;
     }
 
-    function check() external {
+    function invoke() external {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
 
         uint amount;
         while (current.timestamp != 0 && current.timestamp < now && msg.gas >= current.gasLimit) {
-            uint gasBefore = msg.gas;
+            uint gas = msg.gas;
             bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
+            gas -= msg.gas;
+            Checked(current.contractAddress, status, gas);
+
             amount += getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
-            Checked(current.contractAddress, status, gasBefore - msg.gas);
             current = next();
         }
+        if (amount > 0) {
+            msg.sender.transfer(amount);
+        }
+    }
+
+    function invokeTop() external {
+        KeysUtils.Object memory current = KeysUtils.toObject(head);
+        uint gas = msg.gas;
+        bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
+        gas -= msg.gas;
+
+        Checked(current.contractAddress, status, gas);
+
+        uint amount = getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
+
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
