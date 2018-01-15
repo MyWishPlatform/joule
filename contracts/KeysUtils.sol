@@ -3,14 +3,14 @@ pragma solidity ^0.4.19;
 library KeysUtils {
     // Such order is important to load from state
     struct Object {
-        uint32 gasPrice;
+        uint32 gasPriceGwei;
         uint32 gasLimit;
         uint32 timestamp;
         address contractAddress;
     }
 
     function toKey(Object _obj) internal pure returns (bytes32) {
-        return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPrice);
+        return toKey(_obj.contractAddress, _obj.timestamp, _obj.gasLimit, _obj.gasPriceGwei);
     }
 
     function toKeyFromStorage(Object storage _obj) internal view returns (bytes32 _key) {

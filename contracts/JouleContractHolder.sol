@@ -4,10 +4,11 @@ import './JouleConsts.sol';
 import './JouleIndex.sol';
 
 contract JouleContractHolder is usingConsts {
-
+    using KeysUtils for bytes32;
+//    event Found(uint timestamp);
     uint public length;
     bytes32 head;
-    mapping (bytes32 => KeysUtils.Object) objects;
+    mapping (bytes32 => bytes32) objects;
     JouleIndex index;
 
     function JouleContractHolder() public {
@@ -20,23 +21,30 @@ contract JouleContractHolder is usingConsts {
         if (head == 0) {
             head = id;
             index.insert(id);
+//            Found(0xffffffff);
             return;
         }
         bytes32 previous = index.findFloorKey(_timestamp);
-        uint prevTimestamp = KeysUtils.getTimestamp(previous);
-        uint headTimestamp = KeysUtils.getTimestamp(head);
+        uint prevTimestamp = previous.getTimestamp();
+//        Found(prevTimestamp);
+        uint headTimestamp = head.getTimestamp();
+        // add as head, prevTimestamp == 0 or in the past
         if (prevTimestamp < headTimestamp) {
-            previous = head;
+            objects[id] = head;
+            head = id;
         }
-        objects[id] = objects[previous];
-        objects[previous] = KeysUtils.Object(uint32(_gasPrice), uint32(_gasLimit), uint32(_timestamp), _address);
+        // add after the previous
+        else {
+            objects[id] = objects[previous];
+            objects[previous] = id;
+        }
         index.insert(id);
     }
 
-    function next() internal returns (KeysUtils.Object storage _next) {
-        _next = objects[head];
-        head = KeysUtils.toKeyFromStorage(_next);
+    function next() internal returns (KeysUtils.Object memory _next) {
+        head = objects[head];
         length--;
+        _next = head.toObject();
     }
 
     function getNext(uint _count) external view returns (
@@ -54,12 +62,12 @@ contract JouleContractHolder is usingConsts {
 
         bytes32 current = head;
         for (uint i = 0; i < amount; i ++) {
-            KeysUtils.Object memory obj = KeysUtils.toObject(current);
+            KeysUtils.Object memory obj = current.toObject();
             addresses[i] = obj.contractAddress;
             timestamps[i] = obj.timestamp;
             gasLimits[i] = obj.gasLimit;
-            gasPrices[i] = obj.gasPrice;
-            current = KeysUtils.toKey(objects[current]);
+            gasPrices[i] = obj.gasPriceGwei * GWEI;
+            current = objects[current];
         }
     }
 }

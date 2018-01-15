@@ -5,6 +5,7 @@ const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
 const {printNextContracts, printTxLogs} = require('./jouleUtils');
 const utils = require('./web3Utils');
 const BigNumber = require('bignumber.js');
+chai.use(require("chai-bignumber")(BigNumber));
 
 const Joule = artifacts.require("./Joule.sol");
 const Contract0kGas = artifacts.require("./Contract0kGas.sol");
@@ -39,6 +40,8 @@ contract('Joule', accounts => {
     const gasLimit3 = 299983;
     const gasLimit4 = 399958;
 
+    const ETH = web3.toWei(BigNumber(1), 'ether');
+    const GWEI = web3.toWei(BigNumber(1), 'gwei');
     const gasPrice1 = web3.toWei(2, 'gwei');
     const gasPrice2 = web3.toWei(3, 'gwei');
     const gasPrice3 = web3.toWei(4, 'gwei');
@@ -61,37 +64,42 @@ contract('Joule', accounts => {
         await revert(snapshotId);
     });
 
-    it('#0 gas usage', async() => {
+    it('#0 gas usage', async () => {
         const joule = await Joule.new();
-        const address0k = (await Contract0kGas.new()).address;
-        const address100k = (await Contract100kGas.new()).address;
+        const contract0k = await Contract0kGas.new();
+        console.info('gas 0k:', await contract0k.check.estimateGas());
+        const contract100k = await Contract100kGas.new();
+        console.info('gas 100k:', await contract100k.check.estimateGas());
 
         const gasLimit = BigNumber(100000);
         const gasPrice = web3.toWei(BigNumber(40), 'gwei');
-        const value = gasPrice.times(gasLimit);
+        const price = await joule.getPrice(gasLimit, gasPrice);
 
-        await joule.register(address0k, fiveMinutesInFuture, gasLimit, gasPrice, {value: value});
-        await joule.register(address100k, sevenMinutesInFuture, gasLimit, gasPrice, {value: value});
+        await joule.register(contract0k.address, fiveMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit, gasPrice, {value: price});
 
-        console.info(String(await joule.length()));
         const gasIdle = await joule.check.estimateGas({gas: gasLimit.times(2)});
 
         await increaseTime(6 * MINUTE);
 
-        const gas0kCheck = await joule.check.estimateGas({gas: gasLimit.times(2)});
-        const tx = await joule.check({gas: gasLimit.times(2)});
+        const gas0kCheck = await joule.check.estimateGas({gas: gasLimit.times(4)});
 
-        console.info('length:', String(await joule.length()));
-        console.info('events:', tx.logs);
+        const tx = await joule.check({gas: gasLimit.times(2)});
+        tx.logs[0].event.should.be.equals('Checked', 'checked event expected.');
+        tx.logs[0].args._status.should.be.true;
 
         await increaseTime(2 * MINUTE);
 
         const gas100kCheck = await joule.check.estimateGas({gas: gasLimit.times(2)});
-        console.info(await joule.length());
+        const tx100k = await joule.check({gas: gasLimit.times(4)});
+        tx100k.logs[0].event.should.be.equals('Checked', 'checked event expected.');
+        tx100k.logs[0].args._status.should.be.true;
 
         console.info('Gas usages:');
         console.info("\tidle:", gasIdle);
-        console.info("\tsingle empty check:", gas0kCheck);
+        console.info('\tinner 0k check: ', String(tx.logs[0].args._usedGas));
+        console.info("\tsingle 0k check:", gas0kCheck);
+        console.info('\tinner 100k check: ', String(tx100k.logs[0].args._usedGas));
         console.info("\tsingle 100k check:", gas100kCheck);
     });
 
@@ -106,51 +114,78 @@ contract('Joule', accounts => {
         const lowGasPrice = web3.toWei(0.5, 'gwei');
         const highGasPrice = web3.toWei(0x100000001, 'gwei');
 
+        const price = await joule.getPrice(gasLimit, gasPrice);
+        const lowPrice = price - 1;
+
         const fiveMinutesInPast = NOW - 5 * MINUTE;
 
+        // too low price
         await joule
-            .register(address, fiveMinutesInPast, gasLimit, gasPrice, {value: gasLimit * gasPrice})
+            .register(address, fiveMinutesInFuture, gasLimit, gasPrice, {value: lowPrice})
             .should.eventually.be.rejected;
 
+        // time in the past
         await joule
-            .register(address, fiveMinutesInFuture, highGasLimit, gasPrice, {value: highGasLimit * gasPrice})
+            .register(address, fiveMinutesInPast, gasLimit, gasPrice, {value: price})
             .should.eventually.be.rejected;
 
+        // too high gas limit
         await joule
-            .register(address, fiveMinutesInFuture, gasLimit, lowGasPrice, {value: gasLimit * lowGasPrice})
+            .register(address, fiveMinutesInFuture, highGasLimit, gasPrice, {value: ETH})
             .should.eventually.be.rejected;
 
+        // too low gas price
         await joule
-            .register(address, fiveMinutesInFuture, gasLimit, highGasPrice, {value: gasLimit * highGasPrice})
+            .register(address, fiveMinutesInFuture, gasLimit, lowGasPrice, {value: ETH})
+            .should.eventually.be.rejected;
+
+        // too high gas price
+        await joule
+            .register(address, fiveMinutesInFuture, gasLimit, highGasPrice, {value: ETH})
             .should.eventually.be.rejected;
     });
 
     it('#2 correct registration', async () => {
         const joule = await Joule.new();
 
-        addresses.forEach(async (a) => {
-            await joule.register(a, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
-        });
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+
+        for (const i in addresses) {
+            const a = addresses[i];
+            await joule.register(a, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        }
     });
 
     it('#3 register and get next', async () => {
         const joule = await Joule.new();
 
-        addresses.forEach(async (address) => {
-            await joule.register(address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
-        });
+        const price1 = await joule.getPrice(gasLimit1, gasPrice1);
 
-        addresses.forEach(async (address) => {
-            await joule.register(address, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        });
+        await Promise.all(addresses.map(async (address) => {
+            const tx = await joule.register(address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
+            // console.info(address, sevenMinutesInFuture, String(tx.logs[0].args.timestamp));
+        }));
 
-        addresses.forEach(async (address) => {
-            await joule.register(address, nineMinutesInFuture, gasLimit3, gasPrice3, {value: gasLimit3 * gasPrice3});
-        });
+        const price2 = await joule.getPrice(gasLimit2, gasPrice2);
 
-        addresses.forEach(async (address) => {
-            await joule.register(address, threeMinutesInFuture, gasLimit4, gasPrice4, {value: gasLimit4 * gasPrice4});
-        });
+        await Promise.all(addresses.map(async (address) => {
+            const tx = await joule.register(address, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
+            // console.info(address, fiveMinutesInFuture, String(tx.logs[0].args.timestamp));
+        }));
+
+        const price3 = await joule.getPrice(gasLimit3, gasPrice3);
+
+        await Promise.all(addresses.map(async (address) => {
+            const tx = await joule.register(address, nineMinutesInFuture, gasLimit3, gasPrice3, {value: price3});
+            // console.info(address, nineMinutesInFuture, String(tx.logs[0].args.timestamp));
+        }));
+
+        const price4 = await joule.getPrice(gasLimit4, gasPrice4);
+
+        await Promise.all(addresses.map(async (address) => {
+            const tx = await joule.register(address, threeMinutesInFuture, gasLimit4, gasPrice4, {value: price4});
+            // console.info(address, threeMinutesInFuture, String(tx.logs[0].args.timestamp));
+        }));
 
         const length = Number(await joule.length());
         length.should.be.equals(addresses.length * 4);
@@ -182,39 +217,22 @@ contract('Joule', accounts => {
         }
     });
 
-    it('#4 register with lack of funds', async () => {
-        const joule = await Joule.new();
-        const contract = await Contract100kGas.new();
-        const gasLimit = await contract.check.estimateGas();
-        await joule
-            .register(contract.address, fiveMinutesInFuture, gasLimit, gasPrice1, {value: gasLimit * gasPrice1 / 2})
-            .should.eventually.be.rejected;
-    });
-
-    it('#5 simple check one contract', async () => {
+    it('#4 simple check one contract', async () => {
         const joule = await Joule.new();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
 
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        const price2 = await joule.getPrice(gasLimit2, gasPrice2);
+        const price1 = await joule.getPrice(gasLimit1, gasPrice1);
+
+        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
+        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
         await increaseTime(6 * MINUTE);
-        console.info("get balance");
-        const balanceBefore = await utils.getBalance(SENDER);
-        console.info("check");
-        await joule.check({gas: Number(gasLimit1 + 50000), from: SENDER});
-        console.info("get balance");
-        const nowBalance = await utils.getBalance(SENDER);
-        console.info("done");
+        await joule.check({gas: Number(gasLimit1 + 50000)});
 
-        Number(nowBalance).should.be.gte(Number(balanceBefore), "amount for the gas should be returned");
-        console.info(balanceBefore, nowBalance);
-
-        console.info("get length");
         Number(await joule.length()).should.be.equals(1);
 
-        console.info("get next");
         const result = await joule.getNext(1);
         result[0][0].should.be.equals(address2);
         Number(result[1][0]).should.be.equals(fiveMinutesInFuture);
@@ -222,14 +240,37 @@ contract('Joule', accounts => {
         Number(result[3][0]).should.be.equals(Number(gasPrice2));
     });
 
+
+    it('#5 check and return funds', async () => {
+        const joule = await Joule.new();
+        const contract = await Contract100kGas.new();
+        const gasLimit = await contract.check.estimateGas();
+
+        const price = await joule.getPrice(gasLimit, gasPrice1);
+
+        await joule.register(contract.address, threeMinutesInFuture, gasLimit, gasPrice1, {value: price});
+
+        await increaseTime(threeMinutesInFuture);
+
+        const balanceBefore = await utils.getBalance(SENDER);
+        await joule.check({from: SENDER, gasPrice: gasPrice1, gas: gasLimit + 50000});
+        const balanceAfter = await utils.getBalance(SENDER);
+        // console.info(String(balanceBefore), '<=', String(balanceAfter));
+        BigNumber(balanceBefore).comparedTo(BigNumber(balanceAfter)).should.be.lte(0, 'balanceBefore <= balanceAfter');
+    });
+
+
     it('#6 check multiple contracts', async () => {
         const joule = await Joule.new();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
 
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        const price1 = await joule.getPrice(gasLimit1, gasPrice1);
+        const price2 = await joule.getPrice(gasLimit2, gasPrice2);
+
+        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
+        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
 
         await increaseTime(6 * MINUTE);
         await joule.check({gas: Number(gasLimit1 + gasLimit2 + 50000)});
@@ -243,8 +284,11 @@ contract('Joule', accounts => {
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
 
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        const price1 = await joule.getPrice(gasLimit1, gasPrice1);
+        const price2 = await joule.getPrice(gasLimit2, gasPrice2);
+
+        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
+        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
 
         Number(await joule.length()).should.be.equals(2);
         const result = await joule.getNext(2);
@@ -267,13 +311,13 @@ contract('Joule', accounts => {
         const address2 = (await Contract200kGas.new()).address;
         const address3 = (await Contract300kGas.new()).address;
 
-        await joule.register(address1, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
-        await joule.register(address2, threeMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        await joule.register(address3, threeMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
+        await joule.register(address1, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address2, threeMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address3, threeMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
         await increaseTime(4 * MINUTE);
         await joule.check({gas: Number(gasLimit2 + gasLimit2 + 200000)});
-        await joule.register(address3, nineMinutesInFuture, gasLimit3, gasPrice3, {value: gasLimit3 * gasPrice3 * 2});
+        await joule.register(address3, nineMinutesInFuture, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
 
         Number(await joule.length()).should.be.equals(3);
         const result = await joule.getNext(3);
@@ -301,14 +345,14 @@ contract('Joule', accounts => {
         const address2 = (await Contract200kGas.new()).address;
         const address3 = (await Contract300kGas.new()).address;
 
-        await joule.register(address2, threeMinutesInFuture, gasLimit2, gasPrice2, {value: gasLimit2 * gasPrice2});
-        await joule.register(address3, threeMinutesInFuture, gasLimit3, gasPrice3, {value: gasLimit3 * gasPrice3});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
-        await joule.register(address3, fiveMinutesInFuture, gasLimit3, gasPrice3, {value: gasLimit3 * gasPrice3});
+        await joule.register(address2, threeMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address3, threeMinutesInFuture, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
+        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address3, fiveMinutesInFuture, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
 
         await increaseTime(4 * MINUTE);
         await joule.check({gas: Number(gasLimit2 + gasLimit3 + 50000)});
-        await joule.register(address1, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await joule.register(address1, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
         Number(await joule.length()).should.be.equals(3);
         const result = await joule.getNext(3);
@@ -332,7 +376,7 @@ contract('Joule', accounts => {
     it('#10 check with low gas', async () => {
         const joule = await Joule.new();
         const address = (await Contract100kGas.new()).address;
-        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
         await increaseTime(6 * MINUTE);
         await joule.check({gas: Number(gasLimit1 / 2)});
@@ -344,8 +388,8 @@ contract('Joule', accounts => {
         const joule = await Joule.new();
         const address = (await Contract100kGas.new()).address;
 
-        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
-        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
         await increaseTime(4 * MINUTE);
         await joule.check({gas: Number(gasLimit1 * 2 + 100000)});
 
@@ -356,27 +400,29 @@ contract('Joule', accounts => {
         const joule = await Joule.new();
         const address = (await Contract100kGas.new()).address;
 
-        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
-        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
         await increaseTime(6 * MINUTE);
         await joule.check({gas: Number(gasLimit1 + 100000)});
 
         Number(await joule.length()).should.be.equals(1);
     });
 
-    it('#13 write-off of funds when check', async () => {
+    it('#13 check change on register', async () => {
         const joule = await Joule.new();
         const address = (await Contract100kGas.new()).address;
 
-        const balanceBeforeRegister = await utils.getBalance(OWNER);
-        const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: gasLimit1 * gasPrice1});
+        const balanceBefore = await utils.getBalance(OWNER);
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price.add(price), gasPrice: gasPrice1});
+        const weiUsed = BigNumber(tx.receipt.gasUsed).times(gasPrice1);
 
         Number(await joule.length()).should.be.equals(1);
 
-        const newBalance = await utils.getBalance(OWNER);
-        const gasPrice = web3.toWei(100, 'gwei');
-        Number(newBalance.add(gasLimit1 * gasPrice1).add(tx.receipt.gasUsed * gasPrice)).should.be.equals(Number(balanceBeforeRegister));
+        const balanceAfter = await utils.getBalance(OWNER);
+
+        const deltaBalance = balanceBefore.sub(weiUsed).sub(balanceAfter);
+
+        deltaBalance.should.be.bignumber.equals(price, 'delta balance should be equals with price');
     });
-
-
 });

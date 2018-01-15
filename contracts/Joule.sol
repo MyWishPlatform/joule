@@ -17,15 +17,11 @@ contract Joule is JouleAPI, JouleContractHolder {
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI);
 
-        insert(_address, _timestamp, getCorrectLimit(_gasLimit), _gasPrice / GWEI);
+        insert(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
 
         if (msg.value > price) {
             msg.sender.transfer(msg.value - price);
         }
-    }
-
-    function getCorrectLimit(uint _gasLimit) internal view returns (uint) {
-        return _gasLimit + IDLE_CALL;
     }
 
     function getPrice(uint _gasLimit, uint _gasPrice) external view returns (uint) {
@@ -33,7 +29,11 @@ contract Joule is JouleAPI, JouleContractHolder {
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI);
 
-        return getCorrectLimit(_gasLimit) * _gasPrice;
+        return getPriceInner(_gasLimit, _gasPrice);
+    }
+
+    function getPriceInner(uint _gasLimit, uint _gasPrice) internal pure returns (uint) {
+        return (_gasLimit + IDLE_GAS) * _gasPrice;
     }
 
     function check() external {
@@ -43,7 +43,7 @@ contract Joule is JouleAPI, JouleContractHolder {
         while (current.timestamp != 0 && current.timestamp < now && msg.gas >= current.gasLimit) {
             uint gasBefore = msg.gas;
             bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
-            amount += current.gasLimit * current.gasPrice * GWEI;
+            amount += getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
             Checked(current.contractAddress, status, gasBefore - msg.gas);
             current = next();
         }
