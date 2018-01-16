@@ -414,7 +414,10 @@ contract('Joule', accounts => {
 
         const balanceBefore = await utils.getBalance(OWNER);
         const price = await joule.getPrice(gasLimit1, gasPrice1);
-        const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price.add(price), gasPrice: gasPrice1});
+        const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {
+            value: price.add(price),
+            gasPrice: gasPrice1
+        });
         const weiUsed = BigNumber(tx.receipt.gasUsed).times(gasPrice1);
 
         Number(await joule.length()).should.be.equals(1);
@@ -424,5 +427,26 @@ contract('Joule', accounts => {
         const deltaBalance = balanceBefore.sub(weiUsed).sub(balanceAfter);
 
         deltaBalance.should.be.bignumber.equals(price, 'delta balance should be equals with price');
+    });
+
+    it('#14 duplicate key register', async () => {
+        const joule = await Joule.new();
+        const contract100k = await Contract100kGas.new();
+        const contract200k = await Contract200kGas.new();
+
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        // duplicate in the head
+        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price})
+            .should.be.eventually.rejected;
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        // duplicate in the middle
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price})
+            .should.be.eventually.rejected;
+        // duplicate at the end
+        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price})
+            .should.be.eventually.rejected;
     });
 });

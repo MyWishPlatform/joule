@@ -25,6 +25,12 @@ contract JouleContractHolder is usingConsts {
             return;
         }
         bytes32 previous = index.findFloorKey(_timestamp);
+
+        // reject duplicate key on the end
+        require(previous != id);
+        // reject duplicate in the middle
+        require(objects[id] == 0);
+
         uint prevTimestamp = previous.getTimestamp();
 //        Found(prevTimestamp);
         uint headTimestamp = head.getTimestamp();
