@@ -45,7 +45,7 @@ contract Joule is JouleAPI, JouleContractHolder {
             uint gas = msg.gas;
             bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
             gas -= msg.gas;
-            Checked(current.contractAddress, status, gas);
+            Invoked(current.contractAddress, status, gas);
 
             amount += getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
             current = next();
@@ -61,7 +61,7 @@ contract Joule is JouleAPI, JouleContractHolder {
         bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
         gas -= msg.gas;
 
-        Checked(current.contractAddress, status, gas);
+        Invoked(current.contractAddress, status, gas);
 
         uint amount = getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
 
