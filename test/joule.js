@@ -85,14 +85,14 @@ contract('Joule', accounts => {
         const gas0kCheck = await joule.invoke.estimateGas({gas: gasLimit.times(4)});
 
         const tx = await joule.invoke({gas: gasLimit.times(2)});
-        tx.logs[0].event.should.be.equals('Checked', 'checked event expected.');
+        tx.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
         tx.logs[0].args._status.should.be.true;
 
         await increaseTime(2 * MINUTE);
 
         const gas100kCheck = await joule.invoke.estimateGas({gas: gasLimit.times(2)});
         const tx100k = await joule.invoke({gas: gasLimit.times(4)});
-        tx100k.logs[0].event.should.be.equals('Checked', 'checked event expected.');
+        tx100k.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
         tx100k.logs[0].args._status.should.be.true;
 
         console.info('Gas usages:');
