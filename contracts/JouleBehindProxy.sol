@@ -2,10 +2,9 @@ pragma solidity ^0.4.19;
 
 import 'zeppelin/ownership/Ownable.sol';
 import './Joule.sol';
-import './JouleIAPI.sol';
 import './TransferToken.sol';
 
-contract JouleBehindProxy is Joule, JouleIAPI, Ownable, TransferToken {
+contract JouleBehindProxy is Joule, Ownable, TransferToken {
     address public proxy;
 
     function setProxy(address _proxy) public onlyOwner {
@@ -17,15 +16,15 @@ contract JouleBehindProxy is Joule, JouleIAPI, Ownable, TransferToken {
         _;
     }
 
-    function invokeFromProxy() external onlyProxy returns (uint _amount) {
-        return innerInvoke(innerCallback);
+    function invoke() public onlyProxy returns (uint) {
+        return super.invoke();
     }
 
-    function invokeTopFromProxy() external onlyProxy returns (uint _amount) {
-        return innerInvokeTop(innerCallback);
+    function invokeTop() public onlyProxy returns (uint) {
+        return super.invokeTop();
     }
 
-    function innerCallback(address _addr, uint _gas) internal returns (bool) {
-        return proxy.call.gas(_gas)(0xabcdef00, _addr);
+    function invokeCallback(address _contract, uint _gas) internal returns (bool) {
+        return proxy.call.gas(_gas)(0x73027f6d, _contract);
     }
 }

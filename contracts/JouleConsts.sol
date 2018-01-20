@@ -6,7 +6,7 @@ contract usingConsts {
     uint constant IDLE_GAS = 22273;
     uint constant MAX_GAS = 4000000;
     // Code version
-    uint constant VERSION = 0x0100001300000000;
+    bytes8 constant VERSION = 0x0100001300000000;
     //                        ^^ - major
     //                          ^^ - minor
     //                            ^^^^ - build

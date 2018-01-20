@@ -70,7 +70,15 @@ contract JouleContractHolder is usingConsts {
         _gasLimits = new uint[](amount);
         _gasPrices = new uint[](amount);
 
-        getTopInParams(_addresses, _timestamps, _gasLimits, _gasPrices);
+        bytes32 current = head;
+        for (uint i = 0; i < amount; i ++) {
+            KeysUtils.Object memory obj = current.toObject();
+            _addresses[i] = obj.contractAddress;
+            _timestamps[i] = obj.timestamp;
+            _gasLimits[i] = obj.gasLimit;
+            _gasPrices[i] = obj.gasPriceGwei * GWEI;
+            current = objects[current];
+        }
     }
 
     function getTop() external view returns (
@@ -87,17 +95,26 @@ contract JouleContractHolder is usingConsts {
         gasPrice = obj.gasPriceGwei * GWEI;
     }
 
-    function getTopInParams(address[] memory _addresses, uint[] memory _timestamps, uint[] memory _gasLimits, uint[] memory _gasPrices) public view {
-        uint amount = _addresses.length;
-        bytes32 current = head;
-        for (uint i = 0; i < amount; i ++) {
-            KeysUtils.Object memory obj = current.toObject();
-            _addresses[i] = obj.contractAddress;
-            _timestamps[i] = obj.timestamp;
-            _gasLimits[i] = obj.gasLimit;
-            _gasPrices[i] = obj.gasPriceGwei * GWEI;
-            current = objects[current];
+    function getNext(address _contractAddress,
+                     uint _timestamp,
+                     uint _gasLimit,
+                     uint _gasPrice) public view returns (
+        address contractAddress,
+        uint timestamp,
+        uint gasLimit,
+        uint gasPrice
+    ) {
+        if (_timestamp == 0) {
+            return this.getTop();
         }
-    }
 
+        bytes32 prev = KeysUtils.toKey(_contractAddress, _timestamp, _gasLimit, _gasPrice / GWEI);
+        bytes32 current = objects[prev];
+        KeysUtils.Object memory obj = current.toObject();
+
+        contractAddress = obj.contractAddress;
+        timestamp = obj.timestamp;
+        gasLimit = obj.gasLimit;
+        gasPrice = obj.gasPriceGwei * GWEI;
+    }
 }
