@@ -1,7 +1,7 @@
 module.exports = {
     printNextContracts: async (joule, count) => {
         if (typeof count === 'undefined') {
-            count = Number(await joule.length());
+            count = Number(await joule.getCount());
         }
 
         const result = await joule.getTop(count);

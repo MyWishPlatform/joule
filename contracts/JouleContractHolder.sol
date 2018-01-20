@@ -6,7 +6,7 @@ import './JouleIndex.sol';
 contract JouleContractHolder is usingConsts {
     using KeysUtils for bytes32;
 //    event Found(uint timestamp);
-    uint public length;
+    uint internal length;
     bytes32 head;
     mapping (bytes32 => bytes32) objects;
     JouleIndex index;
@@ -53,28 +53,24 @@ contract JouleContractHolder is usingConsts {
         _next = head.toObject();
     }
 
+    function getCount() public view returns (uint) {
+        return length;
+    }
+
     function getTop(uint _count) external view returns (
-        address[] addresses,
-        uint[] timestamps,
-        uint[] gasLimits,
-        uint[] gasPrices
+        address[] _addresses,
+        uint[] _timestamps,
+        uint[] _gasLimits,
+        uint[] _gasPrices
     ) {
         uint amount = _count <= length ? _count : length;
 
-        addresses = new address[](amount);
-        timestamps = new uint[](amount);
-        gasLimits = new uint[](amount);
-        gasPrices = new uint[](amount);
+        _addresses = new address[](amount);
+        _timestamps = new uint[](amount);
+        _gasLimits = new uint[](amount);
+        _gasPrices = new uint[](amount);
 
-        bytes32 current = head;
-        for (uint i = 0; i < amount; i ++) {
-            KeysUtils.Object memory obj = current.toObject();
-            addresses[i] = obj.contractAddress;
-            timestamps[i] = obj.timestamp;
-            gasLimits[i] = obj.gasLimit;
-            gasPrices[i] = obj.gasPriceGwei * GWEI;
-            current = objects[current];
-        }
+        getTopInParams(_addresses, _timestamps, _gasLimits, _gasPrices);
     }
 
     function getTop() external view returns (
@@ -90,4 +86,18 @@ contract JouleContractHolder is usingConsts {
         gasLimit = obj.gasLimit;
         gasPrice = obj.gasPriceGwei * GWEI;
     }
+
+    function getTopInParams(address[] memory _addresses, uint[] memory _timestamps, uint[] memory _gasLimits, uint[] memory _gasPrices) public view {
+        uint amount = _addresses.length;
+        bytes32 current = head;
+        for (uint i = 0; i < amount; i ++) {
+            KeysUtils.Object memory obj = current.toObject();
+            _addresses[i] = obj.contractAddress;
+            _timestamps[i] = obj.timestamp;
+            _gasLimits[i] = obj.gasLimit;
+            _gasPrices[i] = obj.gasPriceGwei * GWEI;
+            current = objects[current];
+        }
+    }
+
 }

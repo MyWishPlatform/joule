@@ -37,6 +37,11 @@ contract JouleAPI {
     function getPrice(uint _gasLimit, uint _gasPrice) external view returns (uint);
 
     /**
+     * @dev Gets how many contracts are registered (and not invoked).
+     */
+    function getCount() public view returns (uint);
+
+    /**
      * @dev Gets top contract (the next to invoke).
      *
      * @return contractAddress  The contract address.
@@ -54,6 +59,7 @@ contract JouleAPI {
     /**
      * @dev Gets top _count contracts (in order to invoke).
      *
+     * @param _count        How many records will be returned.
      * @return addresses    The contracts addresses.
      * @return timestamps   The invocation timestamps.
      * @return gasLimits    The invocation gas limits.
@@ -67,8 +73,18 @@ contract JouleAPI {
     );
 
     /**
+     * @dev Gets top _count contracts (in order to invoke).
+     *
+     * @param _addresses    The contracts addresses.
+     * @param _timestamps   The invocation timestamps.
+     * @param _gasLimits    The invocation gas limits.
+     * @param _gasPrices    The invocation expected prices.
+     */
+    function getTopInParams(address[] memory _addresses, uint[] memory _timestamps, uint[] memory _gasLimits, uint[] memory _gasPrices) public view;
+
+    /**
      * @dev Gets actual code version.
      * @return Code version. Mask: 0xff.0xff.0xffff-0xffffffff (major.minor.build-hash)
      */
-    function getVersion() external pure returns (uint);
+    function getVersion() external view returns (uint);
 }

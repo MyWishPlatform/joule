@@ -38,12 +38,25 @@ contract Joule is JouleAPI, JouleContractHolder {
     }
 
     function invoke() external {
+        innerInvoke(invokeCallback);
+    }
+
+    function invokeTop() external {
+        innerInvokeTop(invokeCallback);
+    }
+
+    function getVersion() external view returns (uint) {
+        return VERSION;
+    }
+
+    function innerInvoke(function (address, uint) internal returns (bool) _callback) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
 
         uint amount;
         while (current.timestamp != 0 && current.timestamp < now && msg.gas >= current.gasLimit) {
             uint gas = msg.gas;
-            bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
+            bool status = _callback(current.contractAddress, current.gasLimit);
+//            current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
             gas -= msg.gas;
             Invoked(current.contractAddress, status, gas);
 
@@ -53,12 +66,13 @@ contract Joule is JouleAPI, JouleContractHolder {
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
+        return amount;
     }
 
-    function invokeTop() external {
+    function innerInvokeTop(function (address, uint) internal returns (bool) _callback) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
         uint gas = msg.gas;
-        bool status = current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
+        bool status = _callback(current.contractAddress, current.gasLimit);
         gas -= msg.gas;
 
         Invoked(current.contractAddress, status, gas);
@@ -68,9 +82,12 @@ contract Joule is JouleAPI, JouleContractHolder {
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
+        return amount;
     }
 
-    function getVersion() external pure returns (uint) {
-        return VERSION;
+
+    function invokeCallback(address _contract, uint _gas) internal returns (bool) {
+        return _contract.call.gas(_gas)(0x919840ad);
     }
+
 }
