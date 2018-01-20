@@ -1,14 +1,17 @@
 {
   "name": "joule",
   "version": "0.1.0",
-  "description": "Joule",
+  "description": "Contract invocation system.",
   "directories": {
     "test": "test"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "authors": [
+    "Val Dubrava <vd@mywish.io>",
+    "Nikolay Toporkov <nt@mywish.io>"
+  ],
   "license": "ISC",
   "dependencies": {
     "bignumber.js": "^5.0.0",

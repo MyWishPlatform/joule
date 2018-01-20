@@ -1,0 +1,19 @@
+{
+  "package_name": "joule",
+  "version": "0.1.0",
+  "description": "Contract invocation system.",
+  "authors": [
+    "Val Dubrava <vd@mywish.io>",
+    "Nikolay Toporkov <nt@mywish.io>"
+  ],
+  "keywords": [
+    "ethereum",
+    "smart",
+    "contracts",
+    "solidity"
+  ],
+  "dependencies": {
+    "zeppelin": "^1.3.0"
+  },
+  "license": "ISC"
+}

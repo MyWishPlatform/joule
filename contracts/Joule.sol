@@ -69,4 +69,8 @@ contract Joule is JouleAPI, JouleContractHolder {
             msg.sender.transfer(amount);
         }
     }
+
+    function getVersion() external pure returns (uint) {
+        return VERSION;
+    }
 }

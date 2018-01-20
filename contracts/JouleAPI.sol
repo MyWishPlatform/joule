@@ -65,4 +65,10 @@ contract JouleAPI {
         uint[] gasLimits,
         uint[] gasPrices
     );
+
+    /**
+     * @dev Gets actual code version.
+     * @return Code version. Mask: 0xff.0xff.0xffff-0xffffffff (major.minor.build-hash)
+     */
+    function getVersion() external pure returns (uint);
 }
