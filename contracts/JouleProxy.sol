@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 import 'zeppelin/ownership/Ownable.sol';
 import './JouleAPI.sol';
 import './JouleBehindProxy.sol';
-import './TransferToken.sol';
+import './utils/TransferToken.sol';
 import './JouleProxyAPI.sol';
 import './CheckableContract.sol';
 

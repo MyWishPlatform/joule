@@ -1,14 +1,20 @@
 pragma solidity ^0.4.19;
 
-import "./KeysUtils.sol";
+import "./utils/KeysUtils.sol";
+import './JouleStorage.sol';
 
 contract JouleIndex {
     using KeysUtils for bytes32;
     uint constant YEAR = 0x1DFE200;
 
     // year -> month -> day -> hour
-    mapping (bytes32 => bytes32) index;
+    JouleStorage public state;
     bytes32 head;
+
+    function JouleIndex(bytes32 _head, JouleStorage _storage) public {
+        head = _head;
+        state = _storage;
+    }
 
     function insert(bytes32 _key) public {
         uint timestamp = _key.getTimestamp();
@@ -29,7 +35,7 @@ contract JouleIndex {
         bytes32 week = toKey(timestamp, 1 weeks);
         bytes32 low;
         bytes32 high;
-        (low, high) = fromValue(index[year]);
+        (low, high) = fromValue(state.get(year));
         if (week < low || week > high) {
             if (week < low || low == 0) {
                 low = week;
@@ -37,10 +43,10 @@ contract JouleIndex {
             if (week > high) {
                 high = week;
             }
-            index[year] = toValue(low, high);
+            state.set(year, toValue(low, high));
         }
 
-        (low, high) = fromValue(index[week]);
+        (low, high) = fromValue(state.get(week));
         bytes32 hour = toKey(timestamp, 1 hours);
         if (hour < low || hour > high) {
             if (hour < low || low == 0) {
@@ -49,10 +55,10 @@ contract JouleIndex {
             if (hour > high) {
                 high = hour;
             }
-            index[week] = toValue(low, high);
+            state.set(week, toValue(low, high));
         }
 
-        (low, high) = fromValue(index[hour]);
+        (low, high) = fromValue(state.get(hour));
         bytes32 minute = toKey(timestamp, 1 minutes);
         if (minute < low || minute > high) {
             if (minute < low || low == 0) {
@@ -61,10 +67,10 @@ contract JouleIndex {
             if (minute > high) {
                 high = minute;
             }
-            index[hour] = toValue(low, high);
+            state.set(hour, toValue(low, high));
         }
 
-        (low, high) = fromValue(index[minute]);
+        (low, high) = fromValue(state.get(minute));
         bytes32 tsKey = toKey(timestamp);
         if (tsKey < low || tsKey > high) {
             if (tsKey < low || low == 0) {
@@ -73,10 +79,10 @@ contract JouleIndex {
             if (tsKey > high) {
                 high = tsKey;
             }
-            index[minute] = toValue(low, high);
+            state.set(minute, toValue(low, high));
         }
 
-        index[tsKey] = _key;
+        state.set(tsKey, _key);
     }
 
     function findFloorKeyYear(uint _timestamp, bytes32 _low, bytes32 _high) view internal returns (bytes32) {
@@ -86,21 +92,21 @@ contract JouleIndex {
         }
         if (year > _high) {
             // week
-            (low, high) = fromValue(index[_high]);
+            (low, high) = fromValue(state.get(_high));
             // hour
-            (low, high) = fromValue(index[high]);
+            (low, high) = fromValue(state.get(high));
             // minute
-            (low, high) = fromValue(index[high]);
+            (low, high) = fromValue(state.get(high));
             // ts
-            (low, high) = fromValue(index[high]);
-            return index[high];
+            (low, high) = fromValue(state.get(high));
+            return state.get(high);
         }
 
         bytes32 low;
         bytes32 high;
 
         while (year >= _low) {
-            (low, high) = fromValue(index[year]);
+            (low, high) = fromValue(state.get(year));
             if (low != 0) {
                 bytes32 key = findFloorKeyWeek(_timestamp, low, high);
                 if (key != 0) {
@@ -127,16 +133,16 @@ contract JouleIndex {
 
         if (week > _high) {
             // hour
-            (low, high) = fromValue(index[_high]);
+            (low, high) = fromValue(state.get(_high));
             // minute
-            (low, high) = fromValue(index[high]);
+            (low, high) = fromValue(state.get(high));
             // ts
-            (low, high) = fromValue(index[high]);
-            return index[high];
+            (low, high) = fromValue(state.get(high));
+            return state.get(high);
         }
 
         while (week >= _low) {
-            (low, high) = fromValue(index[week]);
+            (low, high) = fromValue(state.get(week));
             if (low != 0) {
                 bytes32 key = findFloorKeyHour(_timestamp, low, high);
                 if (key != 0) {
@@ -164,14 +170,14 @@ contract JouleIndex {
 
         if (hour > _high) {
             // minute
-            (low, high) = fromValue(index[_high]);
+            (low, high) = fromValue(state.get(_high));
             // ts
-            (low, high) = fromValue(index[high]);
-            return index[high];
+            (low, high) = fromValue(state.get(high));
+            return state.get(high);
         }
 
         while (hour >= _low) {
-            (low, high) = fromValue(index[hour]);
+            (low, high) = fromValue(state.get(hour));
             if (low != 0) {
                 bytes32 key = findFloorKeyMinute(_timestamp, low, high);
                 if (key != 0) {
@@ -198,12 +204,12 @@ contract JouleIndex {
 
         if (minute > _high) {
             // ts
-            (low, high) = fromValue(index[_high]);
-            return index[high];
+            (low, high) = fromValue(state.get(_high));
+            return state.get(high);
         }
 
         while (minute >= _low) {
-            (low, high) = fromValue(index[minute]);
+            (low, high) = fromValue(state.get(minute));
             if (low != 0) {
                 bytes32 key = findFloorKeyTimestamp(_timestamp, low, high);
                 if (key != 0) {
@@ -226,11 +232,11 @@ contract JouleIndex {
             return 0;
         }
         if (tsKey > _high) {
-            return index[_high];
+            return state.get(_high);
         }
 
         while (tsKey >= _low) {
-            bytes32 key = index[tsKey];
+            bytes32 key = state.get(tsKey);
             if (key != 0) {
                 return key;
             }

@@ -2,17 +2,20 @@ pragma solidity ^0.4.19;
 
 import './JouleConsts.sol';
 import './JouleIndex.sol';
+import './JouleStorage.sol';
 
 contract JouleContractHolder is usingConsts {
     using KeysUtils for bytes32;
 //    event Found(uint timestamp);
     uint internal length;
     bytes32 head;
-    mapping (bytes32 => bytes32) objects;
+    JouleStorage public state;
     JouleIndex index;
 
-    function JouleContractHolder() public {
-        index = new JouleIndex();
+    function JouleContractHolder(bytes32 _head, uint _length, JouleStorage _storage) public {
+        index = new JouleIndex(_head, _storage);
+        head = _head;
+        length = _length;
     }
 
     function insert(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
@@ -29,26 +32,26 @@ contract JouleContractHolder is usingConsts {
         // reject duplicate key on the end
         require(previous != id);
         // reject duplicate in the middle
-        require(objects[id] == 0);
+        require(state.get(id) == 0);
 
         uint prevTimestamp = previous.getTimestamp();
 //        Found(prevTimestamp);
         uint headTimestamp = head.getTimestamp();
         // add as head, prevTimestamp == 0 or in the past
         if (prevTimestamp < headTimestamp) {
-            objects[id] = head;
+            state.set(id, head);
             head = id;
         }
         // add after the previous
         else {
-            objects[id] = objects[previous];
-            objects[previous] = id;
+            state.set(id, state.get(previous));
+            state.set(previous, id);
         }
         index.insert(id);
     }
 
     function next() internal returns (KeysUtils.Object memory _next) {
-        head = objects[head];
+        head = state.get(head);
         length--;
         _next = head.toObject();
     }
@@ -77,7 +80,7 @@ contract JouleContractHolder is usingConsts {
             _timestamps[i] = obj.timestamp;
             _gasLimits[i] = obj.gasLimit;
             _gasPrices[i] = obj.gasPriceGwei * GWEI;
-            current = objects[current];
+            current = state.get(current);
         }
     }
 
@@ -109,7 +112,7 @@ contract JouleContractHolder is usingConsts {
         }
 
         bytes32 prev = KeysUtils.toKey(_contractAddress, _timestamp, _gasLimit, _gasPrice / GWEI);
-        bytes32 current = objects[prev];
+        bytes32 current = state.get(prev);
         KeysUtils.Object memory obj = current.toObject();
 
         contractAddress = obj.contractAddress;

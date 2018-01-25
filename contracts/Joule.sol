@@ -3,11 +3,20 @@ pragma solidity ^0.4.19;
 import './JouleAPI.sol';
 import './JouleContractHolder.sol';
 import './CheckableContract.sol';
+import './JouleVault.sol';
 
 contract Joule is JouleAPI, JouleContractHolder {
+    JouleVault public vault;
+
+    function Joule(JouleVault _vault, bytes32 _head, uint _length, JouleStorage _storage) public
+        JouleContractHolder (_head, _length, _storage) {
+        vault = _vault;
+    }
+
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable returns (uint) {
         uint price = this.getPrice(_gasLimit, _gasPrice);
         require(msg.value >= price);
+        vault.transfer(price);
 
         require(_timestamp > now);
         require(_timestamp < 0x100000000);
@@ -66,7 +75,7 @@ contract Joule is JouleAPI, JouleContractHolder {
             current = next();
         }
         if (amount > 0) {
-            msg.sender.transfer(amount);
+            vault.withdraw(msg.sender, amount);
         }
         return amount;
     }
@@ -83,7 +92,7 @@ contract Joule is JouleAPI, JouleContractHolder {
         uint amount = getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
 
         if (amount > 0) {
-            msg.sender.transfer(amount);
+            vault.withdraw(msg.sender, amount);
         }
         return amount;
     }
