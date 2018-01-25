@@ -64,7 +64,7 @@ contract Joule is JouleAPI, JouleContractHolder {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
 
         uint amount;
-        while (current.timestamp != 0 && current.timestamp < now && msg.gas >= current.gasLimit) {
+        while (current.timestamp != 0 && current.timestamp < now && msg.gas > (current.gasLimit + IDLE_GAS)) {
             uint gas = msg.gas;
             bool status = _callback(current.contractAddress, current.gasLimit);
 //            current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
