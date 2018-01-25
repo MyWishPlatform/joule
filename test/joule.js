@@ -8,6 +8,8 @@ const BigNumber = require('bignumber.js');
 chai.use(require("chai-bignumber")(BigNumber));
 
 const Joule = artifacts.require("./Joule.sol");
+const Storage = artifacts.require("./JouleStorage.sol");
+const Vault = artifacts.require("./JouleVault.sol");
 const Contract0kGas = artifacts.require("./Contract0kGas.sol");
 const Contract100kGas = artifacts.require("./Contract100kGas.sol");
 const Contract200kGas = artifacts.require("./Contract200kGas.sol");
@@ -64,8 +66,18 @@ contract('Joule', accounts => {
         await revert(snapshotId);
     });
 
+    const createJoule = async () => {
+        const vault = await Vault.new();
+        const storage = await Storage.new();
+        const joule = await Joule.new(vault.address, 0, 0, storage.address);
+        await vault.setJoule(joule.address);
+        await storage.giveAccess(joule.address);
+        await storage.giveAccess(await joule.index());
+        return joule;
+    };
+
     it('#0 gas usage', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const contract0k = await Contract0kGas.new();
         console.info('gas 0k:', await contract0k.check.estimateGas());
         const contract100k = await Contract100kGas.new();
@@ -104,7 +116,7 @@ contract('Joule', accounts => {
     });
 
     it('#1 registration restrictions', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
 
         const gasLimit = 100000;
@@ -146,7 +158,7 @@ contract('Joule', accounts => {
     });
 
     it('#2 correct registration', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const price = await joule.getPrice(gasLimit1, gasPrice1);
 
@@ -157,7 +169,7 @@ contract('Joule', accounts => {
     });
 
     it('#3 register and get next', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const price1 = await joule.getPrice(gasLimit1, gasPrice1);
 
@@ -218,7 +230,7 @@ contract('Joule', accounts => {
     });
 
     it('#4 simple check one contract', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
@@ -242,7 +254,7 @@ contract('Joule', accounts => {
 
 
     it('#5 check and return funds', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const contract = await Contract100kGas.new();
         const gasLimit = await contract.check.estimateGas();
 
@@ -261,7 +273,7 @@ contract('Joule', accounts => {
 
 
     it('#6 check multiple contracts', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
@@ -279,7 +291,7 @@ contract('Joule', accounts => {
     });
 
     it('#7 insert before head', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
@@ -305,7 +317,7 @@ contract('Joule', accounts => {
     });
 
     it('#8 insert-insert-check-insert', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
@@ -339,7 +351,7 @@ contract('Joule', accounts => {
     });
 
     it('#9 check chain of contracts same timestamps', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
 
         const address1 = (await Contract100kGas.new()).address;
         const address2 = (await Contract200kGas.new()).address;
@@ -374,7 +386,7 @@ contract('Joule', accounts => {
     });
 
     it('#10 check with low gas', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
         await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
@@ -385,7 +397,7 @@ contract('Joule', accounts => {
     });
 
     it('#11 check with extra gas but not in time', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
 
         await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
@@ -397,7 +409,7 @@ contract('Joule', accounts => {
     });
 
     it('#12 check with extra time but with insufficient gas', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
 
         await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
@@ -409,7 +421,7 @@ contract('Joule', accounts => {
     });
 
     it('#13 check change on register', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
 
         const balanceBefore = await utils.getBalance(OWNER);
@@ -430,7 +442,7 @@ contract('Joule', accounts => {
     });
 
     it('#14 duplicate key register', async () => {
-        const joule = await Joule.new();
+        const joule = await createJoule();
         const contract100k = await Contract100kGas.new();
         const contract200k = await Contract200kGas.new();
 

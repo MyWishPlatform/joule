@@ -8,12 +8,13 @@ contract JouleContractHolder is usingConsts {
     using KeysUtils for bytes32;
 //    event Found(uint timestamp);
     uint internal length;
-    bytes32 head;
+    bytes32 public head;
     JouleStorage public state;
-    JouleIndex index;
+    JouleIndex public index;
 
     function JouleContractHolder(bytes32 _head, uint _length, JouleStorage _storage) public {
-        index = new JouleIndex(_head, _storage);
+        index = new JouleIndex(_storage);
+        state = _storage;
         head = _head;
         length = _length;
     }

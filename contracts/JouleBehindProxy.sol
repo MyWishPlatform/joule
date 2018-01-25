@@ -7,6 +7,10 @@ import './utils/TransferToken.sol';
 contract JouleBehindProxy is Joule, Ownable, TransferToken {
     address public proxy;
 
+    function JouleBehindProxy(JouleVault _vault, bytes32 _head, uint _length, JouleStorage _storage) public
+        Joule (_vault, _head, _length, _storage) {
+    }
+
     function setProxy(address _proxy) public onlyOwner {
         proxy = _proxy;
     }

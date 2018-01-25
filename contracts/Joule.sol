@@ -9,7 +9,7 @@ contract Joule is JouleAPI, JouleContractHolder {
     JouleVault public vault;
 
     function Joule(JouleVault _vault, bytes32 _head, uint _length, JouleStorage _storage) public
-        JouleContractHolder (_head, _length, _storage) {
+        JouleContractHolder(_head, _length, _storage) {
         vault = _vault;
     }
 

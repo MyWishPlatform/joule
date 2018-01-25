@@ -9,6 +9,8 @@ chai.use(require("chai-bignumber")(BigNumber));
 
 const Joule = artifacts.require("./JouleBehindProxy.sol");
 const Proxy = artifacts.require("./JouleProxy.sol");
+const Storage = artifacts.require("./JouleStorage.sol");
+const Vault = artifacts.require("./JouleVault.sol");
 const Contract0kGas = artifacts.require("./Contract0kGas.sol");
 const Contract100kGas = artifacts.require("./Contract100kGas.sol");
 const Contract200kGas = artifacts.require("./Contract200kGas.sol");
@@ -66,9 +68,15 @@ contract('JouleProxy', accounts => {
     });
 
     const createJoule = async() => {
-        const joule = await Joule.new();
-        const proxy = await Proxy.new();
+        const vault = await Vault.new();
+        const storage = await Storage.new();
 
+        const joule = await Joule.new(vault.address, 0, 0, storage.address);
+        await vault.setJoule(joule.address);
+        await storage.giveAccess(joule.address);
+        await storage.giveAccess(await joule.index());
+
+        const proxy = await Proxy.new();
         await proxy.setJoule(joule.address);
         await joule.setProxy(proxy.address);
 

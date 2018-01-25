@@ -6,13 +6,12 @@ import './JouleStorage.sol';
 contract JouleIndex {
     using KeysUtils for bytes32;
     uint constant YEAR = 0x1DFE200;
+    bytes32 constant HEAD = 0x0;
 
     // year -> month -> day -> hour
     JouleStorage public state;
-    bytes32 head;
 
-    function JouleIndex(bytes32 _head, JouleStorage _storage) public {
-        head = _head;
+    function JouleIndex(JouleStorage _storage) public {
         state = _storage;
     }
 
@@ -21,7 +20,7 @@ contract JouleIndex {
         bytes32 year = toKey(timestamp, YEAR);
         bytes32 headLow;
         bytes32 headHigh;
-        (headLow, headHigh) = fromValue(head);
+        (headLow, headHigh) = fromValue(state.get(HEAD));
         if (year < headLow || headLow == 0 || year > headHigh) {
             if (year < headLow || headLow == 0) {
                 headLow = year;
@@ -29,7 +28,7 @@ contract JouleIndex {
             if (year > headHigh) {
                 headHigh = year;
             }
-            head = toValue(headLow, headHigh);
+            state.set(HEAD, toValue(headLow, headHigh));
         }
 
         bytes32 week = toKey(timestamp, 1 weeks);
@@ -255,7 +254,7 @@ contract JouleIndex {
 
         bytes32 yearLow;
         bytes32 yearHigh;
-        (yearLow, yearHigh) = fromValue(head);
+        (yearLow, yearHigh) = fromValue(state.get(HEAD));
 
         return findFloorKeyYear(_timestamp, yearLow, yearHigh);
     }
