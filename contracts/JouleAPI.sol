@@ -28,7 +28,7 @@ contract JouleAPI {
      * @notice Eth amount to cover gas will be returned if gas price is equal or less then specified for contract. Check getTop for right gas price.
      * @return Reward amount.
      */
-    function invokeTop() public returns (uint);
+    function invokeOnce() public returns (uint);
 
     /**
      * @dev Calculates required to register amount of WEI.
@@ -49,14 +49,18 @@ contract JouleAPI {
      *
      * @return contractAddress  The contract address.
      * @return timestamp        The invocation timestamp.
-     * @return gasLimit         The invocation maximum gas.
+     * @return gasLimit         The contract gas.
      * @return gasPrice         The invocation expected price.
+     * @return invokeGas        The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmount     The amount of reward for invocation.
      */
-    function getTop() external view returns (
+    function getTopOnce() external view returns (
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     );
 
     /**
@@ -67,9 +71,10 @@ contract JouleAPI {
      * @param _gasLimit         The previous invocation maximum gas.
      * @param _gasPrice         The previous invocation expected price.
      * @return contractAddress  The contract address.
-     * @return timestamp        The invocation timestamp.
-     * @return gasLimit         The invocation maximum gas.
+     * @return gasLimit         The contract gas.
      * @return gasPrice         The invocation expected price.
+     * @return invokeGas        The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmount     The amount of reward for invocation.
      */
     function getNext(address _contractAddress,
                      uint _timestamp,
@@ -78,23 +83,29 @@ contract JouleAPI {
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     );
 
     /**
      * @dev Gets top _count contracts (in order to invoke).
      *
-     * @param _count        How many records will be returned.
-     * @return addresses    The contracts addresses.
-     * @return timestamps   The invocation timestamps.
-     * @return gasLimits    The invocation gas limits.
-     * @return gasPrices    The invocation expected prices.
+     * @param _count            How many records will be returned.
+     * @return addresses        The contracts addresses.
+     * @return timestamps       The invocation timestamps.
+     * @return gasLimits        The contract gas.
+     * @return gasPrices        The invocation expected price.
+     * @return invokeGases      The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmounts    The amount of reward for invocation.
      */
     function getTop(uint _count) external view returns (
         address[] addresses,
         uint[] timestamps,
         uint[] gasLimits,
-        uint[] gasPrices
+        uint[] gasPrices,
+        uint[] invokeGases,
+        uint[] rewardAmounts
     );
 
     /**

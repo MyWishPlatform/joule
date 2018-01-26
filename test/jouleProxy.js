@@ -248,7 +248,8 @@ contract('JouleProxy', accounts => {
         await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
         await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
         await increaseTime(6 * MINUTE);
-        await joule.invoke({gas: Number(gasLimit1 + 50000)});
+        const info = await joule.getTopOnce();
+        await joule.invoke({gas: Number(info[4]) + 23000});
 
         Number(await joule.getCount()).should.be.equals(1);
 

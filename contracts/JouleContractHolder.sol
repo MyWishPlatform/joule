@@ -61,64 +61,12 @@ contract JouleContractHolder is usingConsts {
         return length;
     }
 
-    function getTop(uint _count) external view returns (
-        address[] _addresses,
-        uint[] _timestamps,
-        uint[] _gasLimits,
-        uint[] _gasPrices
-    ) {
-        uint amount = _count <= length ? _count : length;
-
-        _addresses = new address[](amount);
-        _timestamps = new uint[](amount);
-        _gasLimits = new uint[](amount);
-        _gasPrices = new uint[](amount);
-
-        bytes32 current = head;
-        for (uint i = 0; i < amount; i ++) {
-            KeysUtils.Object memory obj = current.toObject();
-            _addresses[i] = obj.contractAddress;
-            _timestamps[i] = obj.timestamp;
-            _gasLimits[i] = obj.gasLimit;
-            _gasPrices[i] = obj.gasPriceGwei * GWEI;
-            current = state.get(current);
+    function getRecord(bytes32 _parent) internal view returns (bytes32 _record) {
+        if (_parent == 0) {
+            _record = head;
         }
-    }
-
-    function getTop() external view returns (
-        address contractAddress,
-        uint timestamp,
-        uint gasLimit,
-        uint gasPrice
-    ) {
-        KeysUtils.Object memory obj = head.toObject();
-
-        contractAddress = obj.contractAddress;
-        timestamp = obj.timestamp;
-        gasLimit = obj.gasLimit;
-        gasPrice = obj.gasPriceGwei * GWEI;
-    }
-
-    function getNext(address _contractAddress,
-                     uint _timestamp,
-                     uint _gasLimit,
-                     uint _gasPrice) public view returns (
-        address contractAddress,
-        uint timestamp,
-        uint gasLimit,
-        uint gasPrice
-    ) {
-        if (_timestamp == 0) {
-            return this.getTop();
+        else {
+            _record = state.get(_parent);
         }
-
-        bytes32 prev = KeysUtils.toKey(_contractAddress, _timestamp, _gasLimit, _gasPrice / GWEI);
-        bytes32 current = state.get(prev);
-        KeysUtils.Object memory obj = current.toObject();
-
-        contractAddress = obj.contractAddress;
-        timestamp = obj.timestamp;
-        gasLimit = obj.gasLimit;
-        gasPrice = obj.gasPriceGwei * GWEI;
     }
 }

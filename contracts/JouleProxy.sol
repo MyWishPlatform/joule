@@ -19,7 +19,8 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         _;
     }
 
-    function () public payable onlyJoule {
+    function () public payable {
+//        require(msg.sender == address(joule) || msg.sender == address(joule.vault()));
     }
 
     function getCount() public view returns (uint) {
@@ -42,8 +43,8 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         return amount;
     }
 
-    function invokeTop() public returns (uint) {
-        uint amount = joule.invokeTop();
+    function invokeOnce() public returns (uint) {
+        uint amount = joule.invokeOnce();
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
@@ -54,13 +55,15 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         return joule.getPrice(_gasLimit, _gasPrice);
     }
 
-    function getTop() external view returns (
+    function getTopOnce() external view returns (
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     ) {
-        (contractAddress, timestamp, gasLimit, gasPrice) = joule.getTop();
+        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getTopOnce();
     }
 
     function getNext(address _contractAddress,
@@ -70,18 +73,20 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     ) {
-        (contractAddress, timestamp, gasLimit, gasPrice) = joule.getNext(_contractAddress, _timestamp, _gasLimit, _gasPrice);
+        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNext(_contractAddress, _timestamp, _gasLimit, _gasPrice);
     }
-
-
 
     function getTop(uint _count) external view returns (
         address[] _addresses,
         uint[] _timestamps,
         uint[] _gasLimits,
-        uint[] _gasPrices
+        uint[] _gasPrices,
+        uint[] _invokeGases,
+        uint[] _rewardAmounts
     ) {
         uint length = joule.getCount();
         uint amount = _count <= length ? _count : length;
@@ -90,24 +95,36 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         _timestamps = new uint[](amount);
         _gasLimits = new uint[](amount);
         _gasPrices = new uint[](amount);
+        _invokeGases = new uint[](amount);
+        _rewardAmounts = new uint[](amount);
 
-        address contractAddress;
-        uint timestamp;
-        uint gasLimit;
-        uint gasPrice;
+//        address contractAddress;
+//        uint timestamp;
+//        uint gasLimit;
+//        uint gasPrice;
+//        uint invokeGas;
+//        uint rewardAmount;
 
-        (contractAddress, timestamp, gasLimit, gasPrice) = joule.getTop();
-        _addresses[0] = contractAddress;
-        _timestamps[0] = timestamp;
-        _gasLimits[0] = gasLimit;
-        _gasPrices[0] = gasPrice;
+        uint i = 0;
 
-        for (uint i = 1; i < amount; i ++) {
-            (contractAddress, timestamp, gasLimit, gasPrice) = joule.getNext(contractAddress, timestamp, gasLimit, gasPrice);
-            _addresses[i] = contractAddress;
-            _timestamps[i] = timestamp;
-            _gasLimits[i] = gasLimit;
-            _gasPrices[i] = gasPrice;
+//        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getTopOnce();
+        (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getTopOnce();
+//        _addresses[0] = contractAddress;
+//        _timestamps[0] = timestamp;
+//        _gasLimits[0] = gasLimit;
+//        _gasPrices[0] = gasPrice;
+//        _invokeGases[0] = invokeGas;
+//        _rewardAmounts[0] = rewardAmount;
+
+        for (i += 1; i < amount; i ++) {
+            (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNext(_addresses[i - 1], _timestamps[i - 1], _gasLimits[i - 1], _gasPrices[i - 1]);
+//            (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNext(contractAddress, timestamp, gasLimit, gasPrice);
+//            _addresses[i] = contractAddress;
+//            _timestamps[i] = timestamp;
+//            _gasLimits[i] = gasLimit;
+//            _gasPrices[i] = gasPrice;
+//            _invokeGases[i] = invokeGas;
+//            _rewardAmounts[i] = rewardAmount;
         }
     }
 
