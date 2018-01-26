@@ -1,11 +1,45 @@
-const chai = require("chai");
-chai.use(require("chai-as-promised"));
-chai.should();
+// const chai = require("chai");
+// chai.use(require("chai-as-promised"));
+// chai.should();
+function Test(name, test) {
+    this.name = name;
+    this.test = test;
+}
+let suit;
+module.exports = {
+    tests: [],
+    init: function (accounts) {
+        this.tests = [];
+        suit(accounts);
+    },
+    name: "",
+    create: async () => {
+        const vault = await Vault.new();
+        const storage = await Storage.new();
+        const joule = await Joule.new(vault.address, 0, 0, storage.address);
+        await vault.setJoule(joule.address);
+        await storage.giveAccess(joule.address);
+        await storage.giveAccess(await joule.index());
+        return joule;
+    }
+};
+
+const createJoule = () => module.exports.create();
+
+const it = (name, test) => {
+    module.exports.tests.push(new Test(name, test))
+};
+
+const contract = function (name, _suit) {
+    suit = _suit;
+    module.exports.name = name;
+};
+
 const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
 const {printNextContracts, printTxLogs} = require('./jouleUtils');
 const utils = require('./web3Utils');
 const BigNumber = require('bignumber.js');
-chai.use(require("chai-bignumber")(BigNumber));
+// chai.use(require("chai-bignumber")(BigNumber));
 
 const Joule = artifacts.require("./Joule.sol");
 const Storage = artifacts.require("./JouleStorage.sol");
@@ -54,27 +88,17 @@ contract('Joule', accounts => {
     const sevenMinutesInFuture = NOW + 7 * MINUTE;
     const nineMinutesInFuture = NOW + 9 * MINUTE;
 
-    let snapshotId;
+    // let snapshotId;
 
-    beforeEach(async () => {
-        snapshotId = (await snapshot()).result;
-        const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
-        initTime(latestBlock.timestamp);
-    });
-
-    afterEach(async () => {
-        await revert(snapshotId);
-    });
-
-    const createJoule = async () => {
-        const vault = await Vault.new();
-        const storage = await Storage.new();
-        const joule = await Joule.new(vault.address, 0, 0, storage.address);
-        await vault.setJoule(joule.address);
-        await storage.giveAccess(joule.address);
-        await storage.giveAccess(await joule.index());
-        return joule;
-    };
+    // beforeEach(async () => {
+    //     snapshotId = (await snapshot()).result;
+    //     const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
+    //     initTime(latestBlock.timestamp);
+    // });
+    //
+    // afterEach(async () => {
+    //     await revert(snapshotId);
+    // });
 
     it('#0 gas usage', async () => {
         const joule = await createJoule();
