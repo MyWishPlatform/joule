@@ -28,7 +28,7 @@ contract Joule is JouleAPI, JouleContractHolder {
 
         insert(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
 
-        Registered(_address, _timestamp, _gasLimit, _gasPrice);
+        Registered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
 
         if (msg.value > price) {
             msg.sender.transfer(msg.value - price);

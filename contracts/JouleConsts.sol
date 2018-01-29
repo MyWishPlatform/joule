@@ -10,7 +10,7 @@ contract usingConsts {
 
     uint constant MAX_GAS = 4000000;
     // Code version
-    bytes8 constant VERSION = 0x01030025003336c6;
+    bytes8 constant VERSION = 0x01040025003336c6;
     //                          ^^ - major
     //                            ^^ - minor
     //                              ^^^^ - build
