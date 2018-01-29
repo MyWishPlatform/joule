@@ -20,12 +20,29 @@ contract JouleBehindProxy is Joule, Ownable, TransferToken {
         _;
     }
 
-    function invoke() public onlyProxy returns (uint) {
-        return super.invoke();
+    function register(address, uint, uint, uint) external payable returns (uint) {
+        revert();
     }
 
-    function invokeOnce() public onlyProxy returns (uint) {
-        return super.invokeOnce();
+    function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable onlyProxy returns (uint) {
+        return super.registerFor(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
+    }
+
+    function invoke() public returns (uint) {
+        revert();
+    }
+
+    function invokeOnce() public returns (uint) {
+        revert();
+    }
+
+
+    function invokeFor(address _invoker) public onlyProxy returns (uint) {
+        return super.invokeFor(_invoker);
+    }
+
+    function invokeOnceFor(address _invoker) public onlyProxy returns (uint) {
+        return super.invokeOnceFor(_invoker);
     }
 
     function invokeCallback(address _contract, uint _gas) internal returns (bool) {

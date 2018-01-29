@@ -20,7 +20,6 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function () public payable {
-//        require(msg.sender == address(joule) || msg.sender == address(joule.vault()));
     }
 
     function getCount() public view returns (uint) {
@@ -28,7 +27,11 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable returns (uint) {
-        uint change = joule.register.value(msg.value)(_address, _timestamp, _gasLimit, _gasPrice);
+        return registerFor(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+    }
+
+    function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint) {
+        uint change = joule.registerFor.value(msg.value)(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
         if (change > 0) {
             msg.sender.transfer(change);
         }
@@ -36,7 +39,11 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function invoke() public returns (uint) {
-        uint amount = joule.invoke();
+        return invokeFor(msg.sender);
+    }
+
+    function invokeFor(address _invoker) public returns (uint) {
+        uint amount = joule.invokeFor(_invoker);
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
@@ -44,12 +51,17 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function invokeOnce() public returns (uint) {
-        uint amount = joule.invokeOnce();
+        return invokeOnceFor(msg.sender);
+    }
+
+    function invokeOnceFor(address _invoker) public returns (uint) {
+        uint amount = joule.invokeOnceFor(_invoker);
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
         return amount;
     }
+
 
     function getPrice(uint _gasLimit, uint _gasPrice) external view returns (uint) {
         return joule.getPrice(_gasLimit, _gasPrice);

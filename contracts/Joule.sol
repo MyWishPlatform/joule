@@ -15,6 +15,14 @@ contract Joule is JouleAPI, JouleContractHolder {
     }
 
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable returns (uint) {
+        return innerRegister(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+    }
+
+    function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint) {
+        return innerRegister(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
+    }
+
+    function innerRegister(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal returns (uint) {
         uint price = this.getPrice(_gasLimit, _gasPrice);
         require(msg.value >= price);
         vault.transfer(price);
@@ -28,7 +36,7 @@ contract Joule is JouleAPI, JouleContractHolder {
 
         insert(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
 
-        Registered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+        Registered(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
 
         if (msg.value > price) {
             msg.sender.transfer(msg.value - price);
@@ -50,12 +58,22 @@ contract Joule is JouleAPI, JouleContractHolder {
     }
 
     function invoke() public returns (uint) {
-        return innerInvoke(invokeCallback);
+        return innerInvoke(msg.sender, invokeCallback);
     }
 
-    function invokeOnce() public returns (uint) {
-        return innerInvokeTop(invokeCallback);
+    function invokeFor(address _invoker) public returns (uint) {
+        return innerInvoke(_invoker, invokeCallback);
     }
+
+
+    function invokeOnce() public returns (uint) {
+        return innerInvokeTop(msg.sender, invokeCallback);
+    }
+
+    function invokeOnceFor(address _invoker) public returns (uint) {
+        return innerInvokeTop(_invoker, invokeCallback);
+    }
+
 
     function getVersion() external view returns (bytes8) {
         return VERSION;
@@ -140,16 +158,16 @@ contract Joule is JouleAPI, JouleContractHolder {
         rewardAmount = invokeGas * gasPrice;
     }
 
-    function innerInvoke(function (address, uint) internal returns (bool) _callback) internal returns (uint _amount) {
+    function innerInvoke(address _invoker, function (address, uint) internal returns (bool) _callback) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
 
         uint amount;
-        while (current.timestamp != 0 && current.timestamp < now && msg.gas > (current.gasLimit + IDLE_GAS_PRE)) {
+        while (current.timestamp != 0 && current.timestamp < now && msg.gas > (current.gasLimit + REMAINING_GAS)) {
             uint gas = msg.gas;
             bool status = _callback(current.contractAddress, current.gasLimit);
 //            current.contractAddress.call.gas(current.gasLimit)(0x919840ad);
             gas -= msg.gas;
-            Invoked(current.contractAddress, status, gas);
+            Invoked(_invoker, current.contractAddress, status, gas);
 
             amount += getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
             current = next();
@@ -160,14 +178,14 @@ contract Joule is JouleAPI, JouleContractHolder {
         return amount;
     }
 
-    function innerInvokeTop(function (address, uint) internal returns (bool) _callback) internal returns (uint _amount) {
+    function innerInvokeTop(address _invoker, function (address, uint) internal returns (bool) _callback) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
         next();
         uint gas = msg.gas;
         bool status = _callback(current.contractAddress, current.gasLimit);
         gas -= msg.gas;
 
-        Invoked(current.contractAddress, status, gas);
+        Invoked(_invoker, current.contractAddress, status, gas);
 
         uint amount = getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
 
