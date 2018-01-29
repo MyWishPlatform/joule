@@ -7,6 +7,7 @@ const utils = require('./web3Utils');
 const BigNumber = require('bignumber.js');
 chai.use(require("chai-bignumber")(BigNumber));
 
+const JouleNative = artifacts.require("./Joule.sol");
 const Joule = artifacts.require("./JouleBehindProxy.sol");
 const Proxy = artifacts.require("./JouleProxy.sol");
 const Storage = artifacts.require("./JouleStorage.sol");
@@ -47,8 +48,18 @@ contract('Joule', accounts => {
         await revert(snapshotId);
     });
 
-    commonTest.init(accounts);
-    commonTest.tests.forEach(function (test) {
+    const createJoule = async () => {
+        const vault = await Vault.new();
+        const storage = await Storage.new();
+        const joule = await JouleNative.new(vault.address, 0, 0, storage.address);
+        await vault.setJoule(joule.address);
+        await storage.giveAccess(joule.address);
+        await storage.giveAccess(await joule.index());
+        return joule;
+    };
+
+    commonTest.init(accounts, createJoule);
+    commonTest.forEachTest(function (test) {
         it(test.name, test.test);
     });
 });
@@ -104,9 +115,8 @@ contract('JouleProxy', accounts => {
         return proxy;
     };
 
-    commonTest.init(accounts);
-    commonTest.create = createJoule;
-    commonTest.tests.forEach(function (test) {
+    commonTest.init(accounts, createJoule);
+    commonTest.forEachTest(function (test) {
         it(test.name, test.test);
     });
 });

@@ -6,33 +6,23 @@ function Test(name, test) {
     this.test = test;
 }
 let suit;
+let tests = [];
 module.exports = {
-    tests: [],
-    init: function (accounts) {
-        this.tests = [];
-        suit(accounts);
+    init: function (accounts, create) {
+        tests = [];
+        suit(accounts, create);
     },
-    name: "",
-    create: async () => {
-        const vault = await Vault.new();
-        const storage = await Storage.new();
-        const joule = await Joule.new(vault.address, 0, 0, storage.address);
-        await vault.setJoule(joule.address);
-        await storage.giveAccess(joule.address);
-        await storage.giveAccess(await joule.index());
-        return joule;
+    forEachTest: function (callback) {
+        tests.forEach(callback);
     }
 };
 
-const createJoule = () => module.exports.create();
-
 const it = (name, test) => {
-    module.exports.tests.push(new Test(name, test))
+    tests.push(new Test(name, test))
 };
 
-const contract = function (name, _suit) {
+const contract = function (_, _suit) {
     suit = _suit;
-    module.exports.name = name;
 };
 
 const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
@@ -41,9 +31,6 @@ const utils = require('./web3Utils');
 const BigNumber = require('bignumber.js');
 // chai.use(require("chai-bignumber")(BigNumber));
 
-const Joule = artifacts.require("./Joule.sol");
-const Storage = artifacts.require("./JouleStorage.sol");
-const Vault = artifacts.require("./JouleVault.sol");
 const Contract0kGas = artifacts.require("./Contract0kGas.sol");
 const Contract100kGas = artifacts.require("./Contract100kGas.sol");
 const Contract200kGas = artifacts.require("./Contract200kGas.sol");
@@ -65,7 +52,7 @@ const initTime = (now) => {
 
 initTime(new Date("2017-10-10T15:00:00Z").getTime() / 1000);
 
-contract('Joule', accounts => {
+contract('JouleCommon', (accounts, createJoule) => {
     const OWNER = accounts[0];
     const SENDER = accounts[1];
 
