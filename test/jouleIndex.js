@@ -5,6 +5,7 @@ const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
 const {web3async} = require('./web3Utils');
 
 const JouleIndex = artifacts.require("./JouleIndex.sol");
+const Storage = artifacts.require("./JouleStorage.sol");
 
 const BYTES32_ZERO = "0x0000000000000000000000000000000000000000000000000000000000000000";
 const SECOND = 1;
@@ -21,6 +22,13 @@ const initTime = (now) => {
 };
 
 initTime(new Date("2017-10-10T15:00:00Z").getTime() / 1000);
+
+const createIndex = async () => {
+    const storage = await Storage.new();
+    const index = await JouleIndex.new(storage.address);
+    await storage.giveAccess(index.address);
+    return index;
+};
 
 contract('JouleIndex', accounts => {
     const OWNER = accounts[0];
@@ -42,7 +50,7 @@ contract('JouleIndex', accounts => {
     });
 
     it('#1 insert and find', async () => {
-        const index = await JouleIndex.new();
+        const index = await createIndex();
 
         const dates = [
             new Date("2017-10-20T15:00:00Z").getTime() / 1000,
@@ -74,7 +82,7 @@ contract('JouleIndex', accounts => {
     });
 
     it('#2 find single', async () => {
-        const index = await JouleIndex.new();
+        const index = await createIndex();
 
         const ts = new Date("2017-10-20T15:00:00Z").getTime() / 1000;
 
@@ -94,7 +102,7 @@ contract('JouleIndex', accounts => {
         // the worst case when we on week level has two values: the first week and the last in the year
         // and try to find pre last week ts, where week is 604800 seconds
         // year is 31449600
-        const index = await JouleIndex.new();
+        const index = await createIndex();
 
         const first = new Date("2016-12-20T03:00:00").getTime() / 1000;
         const next = new Date("2016-12-27T03:00:01").getTime() / 1000;

@@ -1,20 +1,33 @@
 pragma solidity ^0.4.19;
 
 contract JouleAPI {
-    event Invoked(address indexed _address, bool _status, uint _usedGas);
-    event Registered(address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice);
+    event Invoked(address indexed _invoker, address indexed _address, bool _status, uint _usedGas);
+    event Registered(address indexed _registrant, address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice);
 
     /**
      * @dev Registers the specified contract to invoke at the specified time with the specified gas and price.
      * @notice It required amount of ETH as value, to cover gas usage. See getPrice method.
      *
-     * @param _address Contract's address. Contract MUST implements Checkable interface.
-     * @param _timestamp Timestamp at what moment contract should be called. It MUST be in future.
-     * @param _gasLimit Gas which will be posted to call.
-     * @param _gasPrice Gas price which is recommended to use for this invocation.
+     * @param _address      Contract's address. Contract MUST implements Checkable interface.
+     * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
+     * @param _gasLimit     Gas which will be posted to call.
+     * @param _gasPrice     Gas price which is recommended to use for this invocation.
      * @return Amount of change.
      */
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable returns (uint);
+
+    /**
+     * @dev Registers the specified contract to invoke at the specified time with the specified gas and price.
+     * @notice It required amount of ETH as value, to cover gas usage. See getPrice method.
+     *
+     * @param _registrant   Any address which will be owners for this registration. Useful for calling from contract.
+     * @param _address      Contract's address. Contract MUST implements Checkable interface.
+     * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
+     * @param _gasLimit     Gas which will be posted to call.
+     * @param _gasPrice     Gas price which is recommended to use for this invocation.
+     * @return Amount of change.
+     */
+    function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint);
 
     /**
      * @dev Invokes next contracts in the queue.
@@ -24,11 +37,27 @@ contract JouleAPI {
     function invoke() public returns (uint);
 
     /**
+     * @dev Invokes next contracts in the queue.
+     * @notice Eth amount to cover gas will be returned if gas price is equal or less then specified for contract. Check getTop for right gas price.
+     * @param _invoker Any address from which event will be threw. Useful for calling from contract.
+     * @return Reward amount.
+     */
+    function invokeFor(address _invoker) public returns (uint);
+
+    /**
      * @dev Invokes the top contract in the queue.
      * @notice Eth amount to cover gas will be returned if gas price is equal or less then specified for contract. Check getTop for right gas price.
      * @return Reward amount.
      */
-    function invokeTop() public returns (uint);
+    function invokeOnce() public returns (uint);
+
+    /**
+     * @dev Invokes the top contract in the queue.
+     * @notice Eth amount to cover gas will be returned if gas price is equal or less then specified for contract. Check getTop for right gas price.
+     * @param _invoker Any address from which event will be threw. Useful for calling from contract.
+     * @return Reward amount.
+     */
+    function invokeOnceFor(address _invoker) public returns (uint);
 
     /**
      * @dev Calculates required to register amount of WEI.
@@ -49,14 +78,18 @@ contract JouleAPI {
      *
      * @return contractAddress  The contract address.
      * @return timestamp        The invocation timestamp.
-     * @return gasLimit         The invocation maximum gas.
+     * @return gasLimit         The contract gas.
      * @return gasPrice         The invocation expected price.
+     * @return invokeGas        The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmount     The amount of reward for invocation.
      */
-    function getTop() external view returns (
+    function getTopOnce() external view returns (
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     );
 
     /**
@@ -67,9 +100,10 @@ contract JouleAPI {
      * @param _gasLimit         The previous invocation maximum gas.
      * @param _gasPrice         The previous invocation expected price.
      * @return contractAddress  The contract address.
-     * @return timestamp        The invocation timestamp.
-     * @return gasLimit         The invocation maximum gas.
+     * @return gasLimit         The contract gas.
      * @return gasPrice         The invocation expected price.
+     * @return invokeGas        The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmount     The amount of reward for invocation.
      */
     function getNext(address _contractAddress,
                      uint _timestamp,
@@ -78,23 +112,29 @@ contract JouleAPI {
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     );
 
     /**
      * @dev Gets top _count contracts (in order to invoke).
      *
-     * @param _count        How many records will be returned.
-     * @return addresses    The contracts addresses.
-     * @return timestamps   The invocation timestamps.
-     * @return gasLimits    The invocation gas limits.
-     * @return gasPrices    The invocation expected prices.
+     * @param _count            How many records will be returned.
+     * @return addresses        The contracts addresses.
+     * @return timestamps       The invocation timestamps.
+     * @return gasLimits        The contract gas.
+     * @return gasPrices        The invocation expected price.
+     * @return invokeGases      The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmounts    The amount of reward for invocation.
      */
     function getTop(uint _count) external view returns (
         address[] addresses,
         uint[] timestamps,
         uint[] gasLimits,
-        uint[] gasPrices
+        uint[] gasPrices,
+        uint[] invokeGases,
+        uint[] rewardAmounts
     );
 
     /**
