@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 import 'zeppelin/ownership/Ownable.sol';
 import './JouleAPI.sol';
 import './JouleBehindProxy.sol';
-import './TransferToken.sol';
+import './utils/TransferToken.sol';
 import './JouleProxyAPI.sol';
 import './CheckableContract.sol';
 
@@ -19,7 +19,7 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         _;
     }
 
-    function () public payable onlyJoule {
+    function () public payable {
     }
 
     function getCount() public view returns (uint) {
@@ -27,7 +27,11 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable returns (uint) {
-        uint change = joule.register.value(msg.value)(_address, _timestamp, _gasLimit, _gasPrice);
+        return registerFor(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+    }
+
+    function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint) {
+        uint change = joule.registerFor.value(msg.value)(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
         if (change > 0) {
             msg.sender.transfer(change);
         }
@@ -35,32 +39,43 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function invoke() public returns (uint) {
-        uint amount = joule.invoke();
+        return invokeFor(msg.sender);
+    }
+
+    function invokeFor(address _invoker) public returns (uint) {
+        uint amount = joule.invokeFor(_invoker);
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
         return amount;
     }
 
-    function invokeTop() public returns (uint) {
-        uint amount = joule.invokeTop();
+    function invokeOnce() public returns (uint) {
+        return invokeOnceFor(msg.sender);
+    }
+
+    function invokeOnceFor(address _invoker) public returns (uint) {
+        uint amount = joule.invokeOnceFor(_invoker);
         if (amount > 0) {
             msg.sender.transfer(amount);
         }
         return amount;
     }
+
 
     function getPrice(uint _gasLimit, uint _gasPrice) external view returns (uint) {
         return joule.getPrice(_gasLimit, _gasPrice);
     }
 
-    function getTop() external view returns (
+    function getTopOnce() external view returns (
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     ) {
-        (contractAddress, timestamp, gasLimit, gasPrice) = joule.getTop();
+        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getTopOnce();
     }
 
     function getNext(address _contractAddress,
@@ -70,18 +85,20 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         address contractAddress,
         uint timestamp,
         uint gasLimit,
-        uint gasPrice
+        uint gasPrice,
+        uint invokeGas,
+        uint rewardAmount
     ) {
-        (contractAddress, timestamp, gasLimit, gasPrice) = joule.getNext(_contractAddress, _timestamp, _gasLimit, _gasPrice);
+        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNext(_contractAddress, _timestamp, _gasLimit, _gasPrice);
     }
-
-
 
     function getTop(uint _count) external view returns (
         address[] _addresses,
         uint[] _timestamps,
         uint[] _gasLimits,
-        uint[] _gasPrices
+        uint[] _gasPrices,
+        uint[] _invokeGases,
+        uint[] _rewardAmounts
     ) {
         uint length = joule.getCount();
         uint amount = _count <= length ? _count : length;
@@ -90,24 +107,36 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         _timestamps = new uint[](amount);
         _gasLimits = new uint[](amount);
         _gasPrices = new uint[](amount);
+        _invokeGases = new uint[](amount);
+        _rewardAmounts = new uint[](amount);
 
-        address contractAddress;
-        uint timestamp;
-        uint gasLimit;
-        uint gasPrice;
+//        address contractAddress;
+//        uint timestamp;
+//        uint gasLimit;
+//        uint gasPrice;
+//        uint invokeGas;
+//        uint rewardAmount;
 
-        (contractAddress, timestamp, gasLimit, gasPrice) = joule.getTop();
-        _addresses[0] = contractAddress;
-        _timestamps[0] = timestamp;
-        _gasLimits[0] = gasLimit;
-        _gasPrices[0] = gasPrice;
+        uint i = 0;
 
-        for (uint i = 1; i < amount; i ++) {
-            (contractAddress, timestamp, gasLimit, gasPrice) = joule.getNext(contractAddress, timestamp, gasLimit, gasPrice);
-            _addresses[i] = contractAddress;
-            _timestamps[i] = timestamp;
-            _gasLimits[i] = gasLimit;
-            _gasPrices[i] = gasPrice;
+//        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getTopOnce();
+        (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getTopOnce();
+//        _addresses[0] = contractAddress;
+//        _timestamps[0] = timestamp;
+//        _gasLimits[0] = gasLimit;
+//        _gasPrices[0] = gasPrice;
+//        _invokeGases[0] = invokeGas;
+//        _rewardAmounts[0] = rewardAmount;
+
+        for (i += 1; i < amount; i ++) {
+            (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNext(_addresses[i - 1], _timestamps[i - 1], _gasLimits[i - 1], _gasPrices[i - 1]);
+//            (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNext(contractAddress, timestamp, gasLimit, gasPrice);
+//            _addresses[i] = contractAddress;
+//            _timestamps[i] = timestamp;
+//            _gasLimits[i] = gasLimit;
+//            _gasPrices[i] = gasPrice;
+//            _invokeGases[i] = invokeGas;
+//            _rewardAmounts[i] = rewardAmount;
         }
     }
 
