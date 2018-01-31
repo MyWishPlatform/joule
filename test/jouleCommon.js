@@ -98,14 +98,16 @@ contract('JouleCommon', (accounts, createJoule) => {
         const gasPrice = web3.toWei(BigNumber(40), 'gwei');
         const price = await joule.getPrice(gasLimit, gasPrice);
 
-        await joule.register(contract0k.address, fiveMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract0k.address, threeMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit, gasPrice, {value: price});
         await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, nineMinutesInFuture, gasLimit, gasPrice, {value: price});
 
         const gasIdle = await joule.invoke.estimateGas({gas: gasLimit.times(2)});
 
-        await increaseTime(6 * MINUTE);
+        await increaseTime(4 * MINUTE);
 
-        const gas0kCheck = await joule.invoke.estimateGas({gas: gasLimit.times(4)});
+        const gas0kCheck = await joule.invoke.estimateGas({gas: gasLimit.times(2)});
 
         const tx = await joule.invoke({gas: gasLimit.times(2)});
         tx.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
@@ -114,9 +116,19 @@ contract('JouleCommon', (accounts, createJoule) => {
         await increaseTime(2 * MINUTE);
 
         const gas100kCheck = await joule.invoke.estimateGas({gas: gasLimit.times(2)});
-        const tx100k = await joule.invoke({gas: gasLimit.times(4)});
+        const tx100k = await joule.invoke({gas: gasLimit.times(2)});
         tx100k.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
         tx100k.logs[0].args._status.should.be.true;
+
+        await increaseTime(4 * MINUTE);
+
+        const gas2x100kCheck = await joule.invoke.estimateGas({gas: gasLimit.times(3)});
+        const tx2x100k = await joule.invoke({gas: gasLimit.times(3)});
+        tx2x100k.logs.length.should.be.equals(2, 'must be 2 events');
+        tx2x100k.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
+        tx2x100k.logs[0].args._status.should.be.true;
+        tx2x100k.logs[1].event.should.be.equals('Invoked', 'checked event expected.');
+        tx2x100k.logs[1].args._status.should.be.true;
 
         console.info('Gas usages:');
         console.info("\tidle:", gasIdle);
@@ -124,6 +136,8 @@ contract('JouleCommon', (accounts, createJoule) => {
         console.info("\tsingle 0k check:", gas0kCheck);
         console.info('\tinner 100k check: ', String(tx100k.logs[0].args._usedGas));
         console.info("\tsingle 100k check:", gas100kCheck);
+        console.info('\tinner 2x100k check: ', String(tx2x100k.logs[0].args._usedGas));
+        console.info("\tsingle 2x100k check:", gas2x100kCheck);
     });
 
     it('#1 registration restrictions', async () => {
