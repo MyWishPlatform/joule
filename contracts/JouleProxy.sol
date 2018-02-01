@@ -42,13 +42,12 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     function unregister(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external returns (uint) {
         Unregistered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
         // unregister will return funds to registrant, not to msg.sender (unlike register)
-        return joule.unregisterFor(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+        return joule.unregisterFor(msg.sender, _key, _address, _timestamp, _gasLimit, _gasPrice);
     }
 
-    function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) view returns (bytes32) {
+    function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public view returns (bytes32) {
         return joule.findKey(_address, _timestamp, _gasLimit, _gasPrice);
     }
-
 
     function invoke() public returns (uint) {
         return invokeFor(msg.sender);
@@ -135,7 +134,7 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         return joule.getVersion();
     }
 
-    function callback(address _invoker, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public onlyJoule {
+    function callback(address _invoker, address _address, uint, uint _gasLimit, uint) public onlyJoule returns (bool) {
         require(msg.gas >= _gasLimit);
         uint gas = msg.gas;
         bool status = _address.call.gas(_gasLimit)(0x919840ad);
