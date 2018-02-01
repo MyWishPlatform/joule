@@ -3,10 +3,11 @@ pragma solidity ^0.4.19;
 contract JouleAPI {
     event Invoked(address indexed _invoker, address indexed _address, bool _status, uint _usedGas);
     event Registered(address indexed _registrant, address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice);
+    event Unregistered(address indexed _registrant, address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice);
 
     /**
      * @dev Registers the specified contract to invoke at the specified time with the specified gas and price.
-     * @notice It required amount of ETH as value, to cover gas usage. See getPrice method.
+     * @notice Registration requires the specified amount of ETH in value, to cover invoke bonus. See getPrice method.
      *
      * @param _address      Contract's address. Contract MUST implements Checkable interface.
      * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
@@ -18,9 +19,10 @@ contract JouleAPI {
 
     /**
      * @dev Registers the specified contract to invoke at the specified time with the specified gas and price.
-     * @notice It required amount of ETH as value, to cover gas usage. See getPrice method.
+     * @notice Registration requires the specified amount of ETH in value, to cover invoke bonus. See getPrice method.
+     * @notice If value would be more then required (see getPrice) change will be returned to msg.sender (not to _registrant!).
      *
-     * @param _registrant   Any address which will be owners for this registration. Useful for calling from contract.
+     * @param _registrant   Any address which will be owners for this registration. Only he can unregister. Useful for calling from contract.
      * @param _address      Contract's address. Contract MUST implements Checkable interface.
      * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
      * @param _gasLimit     Gas which will be posted to call.
@@ -28,6 +30,20 @@ contract JouleAPI {
      * @return Amount of change.
      */
     function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint);
+
+    /**
+     * @dev Remove registration of the specified contract (with exact parameters) by the specified key. See findKey method for looking for key.
+     * @notice It returns not full amount of ETH.
+     * @notice Only registrant can remove their registration.
+     * @notice Only registrations in future can be removed.
+     *
+     * @param _address      Contract's address. Contract MUST implements Checkable interface.
+     * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
+     * @param _gasLimit     Gas which will be posted to call.
+     * @param _gasPrice     Gas price which is recommended to use for this invocation.
+     * @return Amount of refund.
+     */
+    function unregister(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external returns (uint);
 
     /**
      * @dev Invokes next contracts in the queue.
@@ -136,6 +152,16 @@ contract JouleAPI {
         uint[] invokeGases,
         uint[] rewardAmounts
     );
+
+    /**
+     * @dev Finds key for the registration with exact parameters. Be careful, key might be changed because of other registrations.
+     * @param _address      Contract's address. Contract MUST implements Checkable interface.
+     * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
+     * @param _gasLimit     Gas which will be posted to call.
+     * @param _gasPrice     Gas price which is recommended to use for this invocation.
+     * @return _key         Key of the specified registration.
+     */
+    function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) view returns (bytes32);
 
     /**
      * @dev Gets actual code version.

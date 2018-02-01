@@ -1,4 +1,4 @@
-const JouleNative = artifacts.require("./Joule.sol");
+const JouleNative = artifacts.require("./JouleCore.sol");
 const Joule = artifacts.require("./JouleBehindProxy.sol");
 const Proxy = artifacts.require("./JouleProxy.sol");
 const Storage = artifacts.require("./JouleStorage.sol");

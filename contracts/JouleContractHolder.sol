@@ -51,6 +51,20 @@ contract JouleContractHolder is usingConsts {
         index.insert(id);
     }
 
+    function remove(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
+        bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
+        if (id == head) {
+            head = state.get(id);
+            length --;
+            return;
+        }
+
+        require(state.get(_key) == id);
+        bytes32 afterRemove = state.get(id);
+        state.set(_key, afterRemove);
+        length --;
+    }
+
     function next() internal returns (KeysUtils.Object memory _next) {
         head = state.get(head);
         length--;
@@ -68,5 +82,22 @@ contract JouleContractHolder is usingConsts {
         else {
             _record = state.get(_parent);
         }
+    }
+
+    /**
+     * @dev Find previous key for existing value.
+     */
+    function findPrevious(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal view returns (bytes32) {
+        bytes32 target = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
+        if (target == head) {
+            return 0;
+        }
+        bytes32 previous = index.findFloorKey(_timestamp - 1);
+        bytes32 next = state.get(previous);
+        while (next != target) {
+            previous = next;
+            next = state.get(previous);
+        }
+        return previous;
     }
 }

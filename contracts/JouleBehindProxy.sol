@@ -1,14 +1,14 @@
 pragma solidity ^0.4.19;
 
 import 'zeppelin/ownership/Ownable.sol';
-import './Joule.sol';
+import './JouleCore.sol';
 import './utils/TransferToken.sol';
 
-contract JouleBehindProxy is Joule, Ownable, TransferToken {
+contract JouleBehindProxy is JouleCore, Ownable, TransferToken {
     address public proxy;
 
     function JouleBehindProxy(JouleVault _vault, bytes32 _head, uint _length, JouleStorage _storage) public
-        Joule (_vault, _head, _length, _storage) {
+        JouleCore(_vault, _head, _length, _storage) {
     }
 
     function setProxy(address _proxy) public onlyOwner {
@@ -20,32 +20,23 @@ contract JouleBehindProxy is Joule, Ownable, TransferToken {
         _;
     }
 
-    function register(address, uint, uint, uint) external payable returns (uint) {
-        revert();
-    }
-
     function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable onlyProxy returns (uint) {
-        return super.registerFor(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
+        return innerRegister(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
     }
 
-    function invoke() public returns (uint) {
-        revert();
+    function unregisterFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public onlyProxy returns (uint) {
+        return innerUnregister(_registrant, _key, _address, _timestamp, _gasLimit, _gasPrice);
     }
-
-    function invokeOnce() public returns (uint) {
-        revert();
-    }
-
 
     function invokeFor(address _invoker) public onlyProxy returns (uint) {
-        return super.invokeFor(_invoker);
+        return innerInvoke(_invoker);
     }
 
     function invokeOnceFor(address _invoker) public onlyProxy returns (uint) {
-        return super.invokeOnceFor(_invoker);
+        return innerInvokeOnce(_invoker);
     }
 
-    function invokeCallback(address _contract, uint _gas) internal returns (bool) {
-        return proxy.call.gas(_gas)(0x73027f6d, _contract);
+    function invokeCallback(address _invoker, KeysUtils.Object memory _record) internal returns (bool) {
+        return callback(_invoker, _record.contractAddress, _record.timestamp, _record.gasLimit, _record.gasPrice);
     }
 }
