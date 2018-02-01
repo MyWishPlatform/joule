@@ -184,7 +184,9 @@ contract JouleCore is JouleContractHolder {
 
         uint amount;
         while (current.timestamp != 0 && current.timestamp < now && msg.gas > (current.gasLimit + REMAINING_GAS)) {
-            invokeCallback(_invoker, current);
+            if (current.gasLimit != 0) {
+                invokeCallback(_invoker, current);
+            }
 
             amount += getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
             current = next();
@@ -198,7 +200,9 @@ contract JouleCore is JouleContractHolder {
     function innerInvokeOnce(address _invoker) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
         next();
-        invokeCallback(_invoker, current);
+        if (current.gasLimit != 0) {
+            invokeCallback(_invoker, current);
+        }
 
         uint amount = getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
 
