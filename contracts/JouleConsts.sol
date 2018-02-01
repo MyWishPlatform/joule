@@ -12,7 +12,7 @@ contract usingConsts {
     // key flag for storing owner
     uint constant OWNER_FLAG = 0x01000000;
     // Code version
-    bytes8 constant VERSION = 0x0106003b0bb4cc14;
+    bytes8 constant VERSION = 0x0106003c01bcd26e;
     //                          ^^ - major
     //                            ^^ - minor
     //                              ^^^^ - build
