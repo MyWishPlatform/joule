@@ -51,18 +51,21 @@ contract JouleContractHolder is usingConsts {
         index.insert(id);
     }
 
-    function remove(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
+    function updateGas(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice, uint _newGasLimit) internal {
         bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
+        bytes32 newId = KeysUtils.toKey(_address, _timestamp, _newGasLimit, _gasPrice);
         if (id == head) {
-            head = state.get(id);
-            length --;
+            bytes32 afterHead = state.get(id);
+            head = newId;
+            state.set(newId, afterHead);
             return;
         }
 
         require(state.get(_key) == id);
-        bytes32 afterRemove = state.get(id);
-        state.set(_key, afterRemove);
-        length --;
+        state.set(_key, newId);
+        bytes32 afterUpdate = state.get(id);
+        state.set(newId, afterUpdate);
+        index.update(id, newId);
     }
 
     function next() internal returns (KeysUtils.Object memory _next) {
@@ -93,10 +96,10 @@ contract JouleContractHolder is usingConsts {
             return 0;
         }
         bytes32 previous = index.findFloorKey(_timestamp - 1);
-        bytes32 next = state.get(previous);
-        while (next != target) {
-            previous = next;
-            next = state.get(previous);
+        bytes32 current = state.get(previous);
+        while (current != target) {
+            previous = current;
+            current = state.get(previous);
         }
         return previous;
     }

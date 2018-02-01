@@ -161,7 +161,7 @@ contract JouleAPI {
      * @param _gasPrice     Gas price which is recommended to use for this invocation.
      * @return _key         Key of the specified registration.
      */
-    function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) view returns (bytes32);
+    function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public view returns (bytes32);
 
     /**
      * @dev Gets actual code version.

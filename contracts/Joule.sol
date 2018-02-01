@@ -5,12 +5,11 @@ import './JouleAPI.sol';
 
 contract Joule is JouleAPI, JouleCore {
     function Joule(JouleVault _vault, bytes32 _head, uint _length, JouleStorage _storage) public
-        JouleCore(_head, _length, _storage) {
+        JouleCore(_vault, _head, _length, _storage) {
     }
 
     function register(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external payable returns (uint) {
-        Registered(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
-        return innerRegister(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+        return registerFor(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
     }
 
     function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint) {
@@ -24,24 +23,24 @@ contract Joule is JouleAPI, JouleCore {
     }
 
     function invoke() public returns (uint) {
-        return innerInvoke(msg.sender, invokeCallback);
+        return innerInvoke(msg.sender);
     }
 
     function invokeFor(address _invoker) public returns (uint) {
-        return innerInvoke(_invoker, invokeCallback);
+        return innerInvoke(_invoker);
     }
 
     function invokeOnce() public returns (uint) {
-        return innerInvokeOnce(msg.sender, invokeCallback);
+        return innerInvokeOnce(msg.sender);
     }
 
     function invokeOnceFor(address _invoker) public returns (uint) {
-        return innerInvokeOnce(_invoker, invokeCallback);
+        return innerInvokeOnce(_invoker);
     }
 
     function invokeCallback(address _invoker, KeysUtils.Object memory _record) internal returns (bool) {
         uint gas = msg.gas;
-        bool status = super.invokeCallback(_record);
+        bool status = super.invokeCallback(_invoker, _record);
         Invoked(_invoker, _record.contractAddress, status, gas - msg.gas);
         return status;
     }

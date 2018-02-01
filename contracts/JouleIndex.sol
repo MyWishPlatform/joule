@@ -2,8 +2,9 @@ pragma solidity ^0.4.19;
 
 import "./utils/KeysUtils.sol";
 import './JouleStorage.sol';
+import 'zeppelin/ownership/Ownable.sol';
 
-contract JouleIndex {
+contract JouleIndex is Ownable  {
     using KeysUtils for bytes32;
     uint constant YEAR = 0x1DFE200;
     bytes32 constant HEAD = 0x0;
@@ -15,7 +16,7 @@ contract JouleIndex {
         state = _storage;
     }
 
-    function insert(bytes32 _key) public {
+    function insert(bytes32 _key) public onlyOwner {
         uint timestamp = _key.getTimestamp();
         bytes32 year = toKey(timestamp, YEAR);
         bytes32 headLow;
@@ -81,6 +82,20 @@ contract JouleIndex {
             state.set(minute, toValue(low, high));
         }
 
+        state.set(tsKey, _key);
+    }
+
+    /**
+     * @dev Update key value from the previous state to new. Timestamp MUST be the same on both keys.
+     */
+    function update(bytes32 _prev, bytes32 _key) public onlyOwner {
+        uint timestamp = _key.getTimestamp();
+        bytes32 tsKey = toKey(timestamp);
+        bytes32 prevKey = state.get(tsKey);
+        // on the same timestamp might be other key, in that case we do not need to update it
+        if (prevKey != _prev) {
+            return;
+        }
         state.set(tsKey, _key);
     }
 
@@ -280,7 +295,6 @@ contract JouleIndex {
             _highKey := and(_value, 0xffffffffffffffff)
         }
     }
-
 
     function toKey(uint timestamp) pure internal returns (bytes32) {
         return bytes32(timestamp);
