@@ -31,12 +31,24 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable returns (uint) {
+        Registered(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
         uint change = joule.registerFor.value(msg.value)(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
         if (change > 0) {
             msg.sender.transfer(change);
         }
         return change;
     }
+
+    function unregister(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external returns (uint) {
+        Unregistered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+        // unregister will return funds to registrant, not to msg.sender (unlike register)
+        return joule.unregisterFor(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
+    }
+
+    function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) view returns (bytes32) {
+        return joule.findKey(_address, _timestamp, _gasLimit, _gasPrice);
+    }
+
 
     function invoke() public returns (uint) {
         return invokeFor(msg.sender);
@@ -110,33 +122,12 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         _invokeGases = new uint[](amount);
         _rewardAmounts = new uint[](amount);
 
-//        address contractAddress;
-//        uint timestamp;
-//        uint gasLimit;
-//        uint gasPrice;
-//        uint invokeGas;
-//        uint rewardAmount;
-
         uint i = 0;
 
-//        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getTopOnce();
         (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getTopOnce();
-//        _addresses[0] = contractAddress;
-//        _timestamps[0] = timestamp;
-//        _gasLimits[0] = gasLimit;
-//        _gasPrices[0] = gasPrice;
-//        _invokeGases[0] = invokeGas;
-//        _rewardAmounts[0] = rewardAmount;
 
         for (i += 1; i < amount; i ++) {
             (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNext(_addresses[i - 1], _timestamps[i - 1], _gasLimits[i - 1], _gasPrices[i - 1]);
-//            (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNext(contractAddress, timestamp, gasLimit, gasPrice);
-//            _addresses[i] = contractAddress;
-//            _timestamps[i] = timestamp;
-//            _gasLimits[i] = gasLimit;
-//            _gasPrices[i] = gasPrice;
-//            _invokeGases[i] = invokeGas;
-//            _rewardAmounts[i] = rewardAmount;
         }
     }
 
@@ -144,7 +135,11 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         return joule.getVersion();
     }
 
-    function callback(address _contract) public onlyJoule {
-        CheckableContract(_contract).check();
+    function callback(address _invoker, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public onlyJoule {
+        require(msg.gas >= _gasLimit);
+        uint gas = msg.gas;
+        bool status = _address.call.gas(_gasLimit)(0x919840ad);
+        Invoked(_invoker, _address, status, gas - msg.gas);
+        return status;
     }
 }
