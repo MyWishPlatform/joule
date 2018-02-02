@@ -95,6 +95,9 @@ contract JouleContractHolder is usingConsts {
         if (target == head) {
             return 0;
         }
+        if (target.getTimestamp() == head.getTimestamp()) {
+            return head;
+        }
         bytes32 previous = index.findFloorKey(_timestamp - 1);
         bytes32 current = state.get(previous);
         while (current != target) {
