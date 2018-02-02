@@ -564,13 +564,39 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.register(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
         await joule.register(contract200k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
 
+        // check fist
+        const topBefore = await joule.getTopOnce();
+        topBefore[2].should.be.bignumber.equals(BigNumber(gasLimit1), "first should be");
+        topBefore[0].should.be.equals(contract100k.address, "first should be");
+        topBefore[1].should.be.bignumber.equals(BigNumber(threeMinutesInFuture), "first should be");
+
+        const keyFirst = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        await joule.unregister(keyFirst, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {gasPrice: 0});
+        const topAfter = await joule.getTopOnce();
+        topAfter[2].should.be.bignumber.equals(BigNumber(0), "gas for removed contract should be 0");
+
+        // check middle
         const key = await joule.findKey(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1);
         const balanceBefore = await utils.getBalance(OWNER);
-        const tx = await joule.unregister(key, contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {gasPrice: 0});
+        await joule.unregister(key, contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {gasPrice: 0});
         const balanceAfter = await utils.getBalance(OWNER);
         const deltaBalance = balanceAfter.minus(balanceBefore).abs();
         deltaBalance.should.be.bignumber.equals(BigNumber(gasLimit1).times(gasPrice1), "should be returned only gas * price, without extra");
+
+        // check invoke
+        await increaseTime(nineMinutesInFuture + 1);
+        const balanceBeforeInvoke = await utils.getBalance(OWNER);
+        await joule.invokeOnce({gasPrice: 0});
+        const balanceAfterInvoke = await utils.getBalance(OWNER);
+        const deltaBalanceInvoke = balanceAfterInvoke.minus(balanceBeforeInvoke).abs();
+        const expectedPrice = await joule.getPrice(gasLimit1, gasPrice1);
+        const removedPrice = expectedPrice.minus(BigNumber(gasLimit1).times(gasPrice1));
+        deltaBalanceInvoke.should.be.bignumber.equals(removedPrice, "should be returned ext price - gas * price");
     });
 
-    // TODO: register for/invoke for
+    // it('#16 unregister', async () => {
+    //
+    // });
+
+        // TODO: register for/invoke for
 });
