@@ -7,12 +7,10 @@ contract usingConsts {
     uint constant REMAINING_GAS = 10000;
     // idle gas - gas to joule (including proxy and others) invocation, excluding contract gas
     uint constant IDLE_GAS = REMAINING_GAS + 30000;
-    // not, it mist be less then 0x00ffffff, because high bytes is used for storing flags
+    // not, it mist be less then 0x00ffffff, because high bytes might be used for storing flags
     uint constant MAX_GAS = 4000000;
-    // key flag for storing owner
-    uint constant OWNER_FLAG = 0x01000000;
     // Code version
-    bytes8 constant VERSION = 0x0106003c01bcd26e;
+    bytes8 constant VERSION = 0x0106004e0d886d01;
     //                          ^^ - major
     //                            ^^ - minor
     //                              ^^^^ - build

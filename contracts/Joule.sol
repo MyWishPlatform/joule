@@ -18,8 +18,9 @@ contract Joule is JouleAPI, JouleCore {
     }
 
     function unregister(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external returns (uint) {
-        Unregistered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
-        return innerUnregister(msg.sender, _key, _address, _timestamp, _gasLimit, _gasPrice);
+        uint amount = innerUnregister(msg.sender, _key, _address, _timestamp, _gasLimit, _gasPrice);
+        Unregistered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice, amount);
+        return amount;
     }
 
     function invoke() public returns (uint) {

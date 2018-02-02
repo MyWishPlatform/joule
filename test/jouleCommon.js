@@ -65,6 +65,7 @@ contract('JouleCommon', (accounts, createJoule) => {
 
     const ETH = web3.toWei(BigNumber(1), 'ether');
     const GWEI = web3.toWei(BigNumber(1), 'gwei');
+    const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
     const gasPrice1 = web3.toWei(2, 'gwei');
     const gasPrice2 = web3.toWei(3, 'gwei');
     const gasPrice3 = web3.toWei(4, 'gwei');
@@ -74,6 +75,9 @@ contract('JouleCommon', (accounts, createJoule) => {
     const fiveMinutesInFuture = NOW + 5 * MINUTE;
     const sevenMinutesInFuture = NOW + 7 * MINUTE;
     const nineMinutesInFuture = NOW + 9 * MINUTE;
+
+    const toHexWithIntPadding = (value) => ("00000000" + BigNumber(value).toString(16)).substr(-8, 8);
+    const toKey = (address, timestamp, gas, price) => address + toHexWithIntPadding(timestamp) + toHexWithIntPadding(gas) + toHexWithIntPadding(BigNumber(price).div(GWEI));
 
     // let snapshotId;
 
@@ -472,11 +476,20 @@ contract('JouleCommon', (accounts, createJoule) => {
         const contract200k = await Contract200kGas.new();
 
         const price = await joule.getPrice(gasLimit1, gasPrice1);
+        const price12 = await joule.getPrice(gasLimit1, gasPrice2);
+        const price21 = await joule.getPrice(gasLimit2, gasPrice1);
         await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
         // duplicate in the head
         await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price})
             .should.be.eventually.rejected;
         await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        // duplicate address and time, but other price
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice2, {value: price12})
+            .should.be.eventually.rejected;
+        // duplicate address and time, but other gas
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit2, gasPrice1, {value: price21})
+            .should.be.eventually.rejected;
+
         await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
         await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
         // duplicate in the middle
@@ -486,4 +499,78 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price})
             .should.be.eventually.rejected;
     });
+
+    it('#15 findKey', async () => {
+        const joule = await createJoule();
+        const contract100k = await Contract100kGas.new();
+        const contract200k = await Contract200kGas.new();
+
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        const firstSingleKey = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        firstSingleKey.should.be.equals(ZERO_BYTES32, "first (single) key must be zero");
+
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        const secondKey = await joule.findKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
+        String(secondKey).should.be.equals(
+            toKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1),
+            "key for second value must be previous key"
+        );
+
+        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        const fiveKey = await joule.findKey(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
+        String(fiveKey).should.be.equals(toKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1),
+            "key should be previous added contract with the same time");
+        await joule.register(contract200k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        // check insert before
+        await joule.register(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        const secondKeyAgain = await joule.findKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
+        String(secondKeyAgain).should.be.equals(
+            toKey(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1),
+            "key for second value must be just added contract with low time"
+        );
+
+        await joule.register(contract200k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        const firstKey = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        firstKey.should.be.equals(ZERO_BYTES32, "first key must be zero");
+
+        const fiveKeyAgain = await joule.findKey(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
+        String(fiveKeyAgain).should.be.equals(toKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1),
+            "key should be previous added contract with the same time, without changing after insert");
+
+    });
+
+    it('#16 unregister', async () => {
+        const joule = await createJoule();
+        const contract100k = await Contract100kGas.new();
+        const contract200k = await Contract200kGas.new();
+
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        // to remove
+        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        await joule.register(contract100k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        // te remove
+        await joule.register(contract200k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        await joule.register(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        const key = await joule.findKey(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1);
+        const balanceBefore = await utils.getBalance(OWNER);
+        const tx = await joule.unregister(key, contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {gasPrice: 0});
+        const balanceAfter = await utils.getBalance(OWNER);
+        const deltaBalance = balanceAfter.minus(balanceBefore).abs();
+        deltaBalance.should.be.bignumber.equals(BigNumber(gasLimit1).times(gasPrice1), "should be returned only gas * price, without extra");
+    });
+
+    // TODO: register for/invoke for
 });
