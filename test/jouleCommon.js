@@ -79,18 +79,6 @@ contract('JouleCommon', (accounts, createJoule) => {
     const toHexWithIntPadding = (value) => ("00000000" + BigNumber(value).toString(16)).substr(-8, 8);
     const toKey = (address, timestamp, gas, price) => address + toHexWithIntPadding(timestamp) + toHexWithIntPadding(gas) + toHexWithIntPadding(BigNumber(price).div(GWEI));
 
-    // let snapshotId;
-
-    // beforeEach(async () => {
-    //     snapshotId = (await snapshot()).result;
-    //     const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
-    //     initTime(latestBlock.timestamp);
-    // });
-    //
-    // afterEach(async () => {
-    //     await revert(snapshotId);
-    // });
-
     it('#0 gas usage', async () => {
         const joule = await createJoule();
         const contract0k = await Contract0kGas.new();
@@ -592,6 +580,22 @@ contract('JouleCommon', (accounts, createJoule) => {
         const expectedPrice = await joule.getPrice(gasLimit1, gasPrice1);
         const removedPrice = expectedPrice.minus(BigNumber(gasLimit1).times(gasPrice1));
         deltaBalanceInvoke.should.be.bignumber.equals(removedPrice, "should be returned ext price - gas * price");
+    });
+
+    it('#17 find next after head key with the same timestamp', async () => {
+        const joule = await createJoule();
+        const contract0k = await Contract0kGas.new();
+        const contract100k = await Contract100kGas.new();
+
+        const gasLimit = BigNumber(100000);
+        const gasPrice = web3.toWei(BigNumber(40), 'gwei');
+        const price = await joule.getPrice(gasLimit, gasPrice);
+
+        await joule.register(contract0k.address, threeMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit, gasPrice, {value: price});
+
+        const key = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit, gasPrice);
+        key.should.be.not.equals(ZERO_BYTES32, "must not be empty key");
     });
 
     // it('#16 unregister', async () => {
