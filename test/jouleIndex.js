@@ -39,6 +39,10 @@ contract('JouleIndex', accounts => {
         return OWNER + ("00000000" + Number(timestamp).toString(16)).substr(-8, 8) + "0000ac00" + "00000020";
     }
 
+    function toKey2(timestamp) {
+        return OWNER + ("00000000" + Number(timestamp).toString(16)).substr(-8, 8) + "0000ac00" + "00f00020";
+    }
+
     beforeEach(async () => {
         snapshotId = (await snapshot()).result;
         const latestBlock = await web3async(web3.eth, web3.eth.getBlock, 'latest');
@@ -134,4 +138,41 @@ contract('JouleIndex', accounts => {
         String(firstKeyAgain).should.be.equals(toKey(first));
     });
 
+    it('#4 update', async () => {
+        const index = await createIndex();
+
+        const dates = [
+            new Date("2017-10-20T15:00:00Z").getTime() / 1000,
+            new Date("2017-10-30T15:00:00Z").getTime() / 1000,
+            new Date("2017-10-31T15:00:00Z").getTime() / 1000,
+            new Date("2017-10-31T16:00:00Z").getTime() / 1000,
+            new Date("2017-10-31T17:00:00Z").getTime() / 1000,
+            new Date("2017-11-10T15:00:00Z").getTime() / 1000,
+            new Date("2017-11-13T15:00:00Z").getTime() / 1000,
+        ];
+        const randomOrder = [3, 5, 1, 0, 2, 6, 4];
+
+        for (const i in randomOrder) {
+            const dateIndex = randomOrder[i];
+            const ts = dates[dateIndex];
+            await index.insert(toKey(ts));
+        }
+
+        for (const i in randomOrder) {
+            const dateIndex = randomOrder[i];
+            const ts = dates[dateIndex];
+            await index.update(toKey(ts), toKey2(ts));
+        }
+
+        for (const i in dates) {
+            const ts = dates[i] - 1;
+            const key = await index.findFloorKey(ts);
+            if (Number(i) === 0) {
+                String(key).should.be.equals(BYTES32_ZERO);
+            }
+            else {
+                String(key).should.be.equals(toKey2(dates[i - 1]));
+            }
+        }
+    });
 });

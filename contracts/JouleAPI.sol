@@ -3,7 +3,7 @@ pragma solidity ^0.4.19;
 contract JouleAPI {
     event Invoked(address indexed _invoker, address indexed _address, bool _status, uint _usedGas);
     event Registered(address indexed _registrant, address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice);
-    event Unregistered(address indexed _registrant, address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice);
+    event Unregistered(address indexed _registrant, address indexed _address, uint _timestamp, uint _gasLimit, uint _gasPrice, uint _amount);
 
     /**
      * @dev Registers the specified contract to invoke at the specified time with the specified gas and price.

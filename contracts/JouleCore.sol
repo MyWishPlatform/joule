@@ -29,8 +29,9 @@ contract JouleCore is JouleContractHolder {
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI);
 
-        insert(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
-        saveRegistrant(_registrant, _address, _timestamp, _gasLimit, _gasPrice / GWEI);
+        uint innerGasPrice = _gasPrice / GWEI;
+        insert(_address, _timestamp, _gasLimit, innerGasPrice);
+        saveRegistrant(_registrant, _address, _timestamp, _gasLimit, innerGasPrice);
 
         if (msg.value > price) {
             msg.sender.transfer(msg.value - price);
@@ -39,21 +40,14 @@ contract JouleCore is JouleContractHolder {
         return 0;
     }
 
-    function saveRegistrant(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal {
-        uint gasWithFlag = OWNER_FLAG;
-        assembly {
-            gasWithFlag := or(_gasLimit, gasWithFlag)
-        }
-        bytes32 id = KeysUtils.toKey(_address, _timestamp, gasWithFlag, _gasPrice);
+    function saveRegistrant(address _registrant, address _address, uint _timestamp, uint, uint) internal {
+        bytes32 id = KeysUtils.toKey(_address, _timestamp, 0, 0);
+        require(state.get(id) == 0);
         state.set(id, bytes32(_registrant));
     }
 
-    function getRegistrant(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal view returns (address) {
-        uint gasWithFlag = OWNER_FLAG;
-        assembly {
-            gasWithFlag := or(_gasLimit, gasWithFlag)
-        }
-        bytes32 id = KeysUtils.toKey(_address, _timestamp, gasWithFlag, _gasPrice);
+    function getRegistrant(address _address, uint _timestamp, uint, uint) internal view returns (address) {
+        bytes32 id = KeysUtils.toKey(_address, _timestamp, 0, 0);
         return address(state.get(id));
     }
 
@@ -64,7 +58,7 @@ contract JouleCore is JouleContractHolder {
         require(_gasLimit < MAX_GAS);
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI);
-        return findPrevious(_address, _timestamp, _gasLimit, _gasPrice);
+        return findPrevious(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
     }
 
     function innerUnregister(address _registrant, bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal returns (uint) {
@@ -80,7 +74,7 @@ contract JouleCore is JouleContractHolder {
         updateGas(_key, _address, _timestamp, _gasLimit, innerGasPrice, 0);
         uint amount = _gasLimit * _gasPrice;
         if (amount != 0) {
-            _registrant.transfer(amount);
+            vault.withdraw(registrant, amount);
         }
         return amount;
     }

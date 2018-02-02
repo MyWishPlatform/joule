@@ -40,9 +40,10 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
     }
 
     function unregister(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) external returns (uint) {
-        Unregistered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice);
         // unregister will return funds to registrant, not to msg.sender (unlike register)
-        return joule.unregisterFor(msg.sender, _key, _address, _timestamp, _gasLimit, _gasPrice);
+        uint amount = joule.unregisterFor(msg.sender, _key, _address, _timestamp, _gasLimit, _gasPrice);
+        Unregistered(msg.sender, _address, _timestamp, _gasLimit, _gasPrice, amount);
+        return amount;
     }
 
     function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public view returns (bytes32) {
