@@ -72,15 +72,14 @@ contract('JouleCommon', (accounts, createJoule) => {
     const gasPrice3 = web3.toWei(4, 'gwei');
     const gasPrice4 = web3.toWei(5, 'gwei');
 
-    const threeMinutesInFuture = NOW + 3 * MINUTE;
-    const fiveMinutesInFuture = NOW + 5 * MINUTE;
-    const sevenMinutesInFuture = NOW + 7 * MINUTE;
-    const nineMinutesInFuture = NOW + 9 * MINUTE;
+    const nowPlus3minutes = NOW + 3 * MINUTE;
+    const nowPlus5minutes = NOW + 5 * MINUTE;
+    const nowPlus7minutes = NOW + 7 * MINUTE;
+    const nowPlus9minutes = NOW + 9 * MINUTE;
 
     const toHexWithIntPadding = (value) => ("00000000" + BigNumber(value).toString(16)).substr(-8, 8);
     const toKey = (address, timestamp, gas, price) => address + toHexWithIntPadding(timestamp) + toHexWithIntPadding(gas) + toHexWithIntPadding(BigNumber(price).div(GWEI));
 
-    console.info(OWNER, SENDER, SECOND_OWNER);
     it('#0 gas usage', async () => {
         const joule = await createJoule();
         const contract0k = await Contract0kGas.new();
@@ -92,10 +91,10 @@ contract('JouleCommon', (accounts, createJoule) => {
         const gasPrice = web3.toWei(BigNumber(40), 'gwei');
         const price = await joule.getPrice(gasLimit, gasPrice);
 
-        await joule.register(contract0k.address, threeMinutesInFuture, gasLimit, gasPrice, {value: price});
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit, gasPrice, {value: price});
-        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit, gasPrice, {value: price});
-        await joule.register(contract100k.address, nineMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract0k.address, nowPlus3minutes, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, nowPlus9minutes, gasLimit, gasPrice, {value: price});
 
         const gasIdle = await joule.invoke.estimateGas({gas: gasLimit.times(2)});
 
@@ -152,7 +151,7 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         // too low price
         await joule
-            .register(address, fiveMinutesInFuture, gasLimit, gasPrice, {value: lowPrice})
+            .register(address, nowPlus5minutes, gasLimit, gasPrice, {value: lowPrice})
             .should.eventually.be.rejected;
 
         // time in the past
@@ -162,17 +161,17 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         // too high gas limit
         await joule
-            .register(address, fiveMinutesInFuture, highGasLimit, gasPrice, {value: ETH})
+            .register(address, nowPlus5minutes, highGasLimit, gasPrice, {value: ETH})
             .should.eventually.be.rejected;
 
         // too low gas price
         await joule
-            .register(address, fiveMinutesInFuture, gasLimit, lowGasPrice, {value: ETH})
+            .register(address, nowPlus5minutes, gasLimit, lowGasPrice, {value: ETH})
             .should.eventually.be.rejected;
 
         // too high gas price
         await joule
-            .register(address, fiveMinutesInFuture, gasLimit, highGasPrice, {value: ETH})
+            .register(address, nowPlus5minutes, gasLimit, highGasPrice, {value: ETH})
             .should.eventually.be.rejected;
     });
 
@@ -183,7 +182,7 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         for (const i in addresses) {
             const a = addresses[i];
-            await joule.register(a, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+            await joule.register(a, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
         }
     });
 
@@ -193,29 +192,29 @@ contract('JouleCommon', (accounts, createJoule) => {
         const price1 = await joule.getPrice(gasLimit1, gasPrice1);
 
         await Promise.all(addresses.map(async (address) => {
-            const tx = await joule.register(address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
-            // console.info(address, sevenMinutesInFuture, String(tx.logs[0].args.timestamp));
+            const tx = await joule.register(address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price1});
+            // console.info(address, nowPlus7minutes, String(tx.logs[0].args.timestamp));
         }));
 
         const price2 = await joule.getPrice(gasLimit2, gasPrice2);
 
         await Promise.all(addresses.map(async (address) => {
-            const tx = await joule.register(address, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
-            // console.info(address, fiveMinutesInFuture, String(tx.logs[0].args.timestamp));
+            const tx = await joule.register(address, nowPlus5minutes, gasLimit2, gasPrice2, {value: price2});
+            // console.info(address, nowPlus5minutes, String(tx.logs[0].args.timestamp));
         }));
 
         const price3 = await joule.getPrice(gasLimit3, gasPrice3);
 
         await Promise.all(addresses.map(async (address) => {
-            const tx = await joule.register(address, nineMinutesInFuture, gasLimit3, gasPrice3, {value: price3});
-            // console.info(address, nineMinutesInFuture, String(tx.logs[0].args.timestamp));
+            const tx = await joule.register(address, nowPlus9minutes, gasLimit3, gasPrice3, {value: price3});
+            // console.info(address, nowPlus9minutes, String(tx.logs[0].args.timestamp));
         }));
 
         const price4 = await joule.getPrice(gasLimit4, gasPrice4);
 
         await Promise.all(addresses.map(async (address) => {
-            const tx = await joule.register(address, threeMinutesInFuture, gasLimit4, gasPrice4, {value: price4});
-            // console.info(address, threeMinutesInFuture, String(tx.logs[0].args.timestamp));
+            const tx = await joule.register(address, nowPlus3minutes, gasLimit4, gasPrice4, {value: price4});
+            // console.info(address, nowPlus3minutes, String(tx.logs[0].args.timestamp));
         }));
 
         const length = Number(await joule.getCount());
@@ -224,25 +223,25 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         for (let i = 0; i < addresses.length; i++) {
             result[0][i].should.be.equals(addresses[i]);
-            Number(result[1][i]).should.be.equals(threeMinutesInFuture);
+            Number(result[1][i]).should.be.equals(nowPlus3minutes);
             Number(result[2][i]).should.be.equals(gasLimit4);
             Number(result[3][i]).should.be.equals(Number(gasPrice4));
         }
         for (let i = addresses.length; i < addresses.length * 2; i++) {
             result[0][i].should.be.equals(addresses[i - addresses.length]);
-            Number(result[1][i]).should.be.equals(fiveMinutesInFuture);
+            Number(result[1][i]).should.be.equals(nowPlus5minutes);
             Number(result[2][i]).should.be.equals(gasLimit2);
             Number(result[3][i]).should.be.equals(Number(gasPrice2));
         }
         for (let i = addresses.length * 2; i < addresses.length * 3; i++) {
             result[0][i].should.be.equals(addresses[i - addresses.length * 2]);
-            Number(result[1][i]).should.be.equals(sevenMinutesInFuture);
+            Number(result[1][i]).should.be.equals(nowPlus7minutes);
             Number(result[2][i]).should.be.equals(gasLimit1);
             Number(result[3][i]).should.be.equals(Number(gasPrice1));
         }
         for (let i = addresses.length * 3; i < addresses.length * 4; i++) {
             result[0][i].should.be.equals(addresses[i - addresses.length * 3]);
-            Number(result[1][i]).should.be.equals(nineMinutesInFuture);
+            Number(result[1][i]).should.be.equals(nowPlus9minutes);
             Number(result[2][i]).should.be.equals(gasLimit3);
             Number(result[3][i]).should.be.equals(Number(gasPrice3));
         }
@@ -257,8 +256,8 @@ contract('JouleCommon', (accounts, createJoule) => {
         const price2 = await joule.getPrice(gasLimit2, gasPrice2);
         const price1 = await joule.getPrice(gasLimit1, gasPrice1);
 
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
+        await joule.register(address2, nowPlus5minutes, gasLimit2, gasPrice2, {value: price2});
+        await joule.register(address1, nowPlus3minutes, gasLimit1, gasPrice1, {value: price1});
         await increaseTime(6 * MINUTE);
         await joule.invoke({gas: Number(gasLimit1 + 50000)});
 
@@ -266,7 +265,7 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         const result = await joule.getTop(1);
         result[0][0].should.be.equals(address2);
-        Number(result[1][0]).should.be.equals(fiveMinutesInFuture);
+        Number(result[1][0]).should.be.equals(nowPlus5minutes);
         Number(result[2][0]).should.be.equals(gasLimit2);
         Number(result[3][0]).should.be.equals(Number(gasPrice2));
     });
@@ -279,9 +278,9 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         const price = await joule.getPrice(gasLimit, gasPrice1);
 
-        await joule.register(contract.address, threeMinutesInFuture, gasLimit, gasPrice1, {value: price});
+        await joule.register(contract.address, nowPlus3minutes, gasLimit, gasPrice1, {value: price});
 
-        await increaseTime(threeMinutesInFuture);
+        await increaseTime(nowPlus3minutes);
 
         const balanceBefore = await utils.getBalance(SENDER);
         await joule.invoke({from: SENDER, gasPrice: gasPrice1, gas: gasLimit + 50000});
@@ -300,8 +299,8 @@ contract('JouleCommon', (accounts, createJoule) => {
         const price1 = await joule.getPrice(gasLimit1, gasPrice1);
         const price2 = await joule.getPrice(gasLimit2, gasPrice2);
 
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
+        await joule.register(address2, nowPlus5minutes, gasLimit2, gasPrice2, {value: price2});
+        await joule.register(address1, nowPlus3minutes, gasLimit1, gasPrice1, {value: price1});
 
         await increaseTime(6 * MINUTE);
         await joule.invoke({gas: Number(gasLimit1 + gasLimit2 + 50000)});
@@ -318,19 +317,19 @@ contract('JouleCommon', (accounts, createJoule) => {
         const price1 = await joule.getPrice(gasLimit1, gasPrice1);
         const price2 = await joule.getPrice(gasLimit2, gasPrice2);
 
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: price2});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price1});
+        await joule.register(address2, nowPlus5minutes, gasLimit2, gasPrice2, {value: price2});
+        await joule.register(address1, nowPlus3minutes, gasLimit1, gasPrice1, {value: price1});
 
         Number(await joule.getCount()).should.be.equals(2);
         const result = await joule.getTop(2);
 
         result[0][0].should.be.equals(address1);
-        Number(result[1][0]).should.be.equals(threeMinutesInFuture);
+        Number(result[1][0]).should.be.equals(nowPlus3minutes);
         Number(result[2][0]).should.be.equals(gasLimit1);
         Number(result[3][0]).should.be.equals(Number(gasPrice1));
 
         result[0][1].should.be.equals(address2);
-        Number(result[1][1]).should.be.equals(fiveMinutesInFuture);
+        Number(result[1][1]).should.be.equals(nowPlus5minutes);
         Number(result[2][1]).should.be.equals(gasLimit2);
         Number(result[3][1]).should.be.equals(Number(gasPrice2));
     });
@@ -342,29 +341,29 @@ contract('JouleCommon', (accounts, createJoule) => {
         const address2 = (await Contract200kGas.new()).address;
         const address3 = (await Contract300kGas.new()).address;
 
-        await joule.register(address1, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
-        await joule.register(address2, threeMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
-        await joule.register(address3, threeMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
-        await joule.register(address2, fiveMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address1, nowPlus7minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address2, nowPlus3minutes, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address3, nowPlus3minutes, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address2, nowPlus5minutes, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
         await increaseTime(4 * MINUTE);
         await joule.invoke({gas: Number(gasLimit2 + gasLimit2 + 200000)});
-        await joule.register(address3, nineMinutesInFuture, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
+        await joule.register(address3, nowPlus9minutes, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
 
         Number(await joule.getCount()).should.be.equals(3);
         const result = await joule.getTop(3);
 
         result[0][0].should.be.equals(address2);
-        Number(result[1][0]).should.be.equals(fiveMinutesInFuture);
+        Number(result[1][0]).should.be.equals(nowPlus5minutes);
         Number(result[2][0]).should.be.equals(gasLimit2);
         Number(result[3][0]).should.be.equals(Number(gasPrice2));
 
         result[0][1].should.be.equals(address1);
-        Number(result[1][1]).should.be.equals(sevenMinutesInFuture);
+        Number(result[1][1]).should.be.equals(nowPlus7minutes);
         Number(result[2][1]).should.be.equals(gasLimit1);
         Number(result[3][1]).should.be.equals(Number(gasPrice1));
 
         result[0][2].should.be.equals(address3);
-        Number(result[1][2]).should.be.equals(nineMinutesInFuture);
+        Number(result[1][2]).should.be.equals(nowPlus9minutes);
         Number(result[2][2]).should.be.equals(gasLimit3);
         Number(result[3][2]).should.be.equals(Number(gasPrice3));
     });
@@ -376,30 +375,30 @@ contract('JouleCommon', (accounts, createJoule) => {
         const address2 = (await Contract200kGas.new()).address;
         const address3 = (await Contract300kGas.new()).address;
 
-        await joule.register(address2, threeMinutesInFuture, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
-        await joule.register(address3, threeMinutesInFuture, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
-        await joule.register(address1, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
-        await joule.register(address3, fiveMinutesInFuture, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
+        await joule.register(address2, nowPlus3minutes, gasLimit2, gasPrice2, {value: await joule.getPrice(gasLimit2, gasPrice2)});
+        await joule.register(address3, nowPlus3minutes, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
+        await joule.register(address1, nowPlus3minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address3, nowPlus5minutes, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
 
         await increaseTime(4 * MINUTE);
         await joule.invoke({gas: Number(gasLimit2 + gasLimit3 + 50000)});
-        await joule.register(address1, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address1, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
         Number(await joule.getCount()).should.be.equals(3);
         const result = await joule.getTop(3);
 
         result[0][0].should.be.equals(address1);
-        Number(result[1][0]).should.be.equals(threeMinutesInFuture);
+        Number(result[1][0]).should.be.equals(nowPlus3minutes);
         Number(result[2][0]).should.be.equals(gasLimit1);
         Number(result[3][0]).should.be.equals(Number(gasPrice1));
 
         result[0][1].should.be.equals(address3);
-        Number(result[1][1]).should.be.equals(fiveMinutesInFuture);
+        Number(result[1][1]).should.be.equals(nowPlus5minutes);
         Number(result[2][1]).should.be.equals(gasLimit3);
         Number(result[3][1]).should.be.equals(Number(gasPrice3));
 
         result[0][2].should.be.equals(address1);
-        Number(result[1][2]).should.be.equals(fiveMinutesInFuture);
+        Number(result[1][2]).should.be.equals(nowPlus5minutes);
         Number(result[2][2]).should.be.equals(gasLimit1);
         Number(result[3][2]).should.be.equals(Number(gasPrice1));
     });
@@ -407,7 +406,7 @@ contract('JouleCommon', (accounts, createJoule) => {
     it('#10 check with low gas', async () => {
         const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
-        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
         await increaseTime(6 * MINUTE);
         await joule.invoke({gas: Number(gasLimit1 / 2)});
@@ -419,8 +418,8 @@ contract('JouleCommon', (accounts, createJoule) => {
         const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
 
-        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
-        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, nowPlus3minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
         await increaseTime(4 * MINUTE);
         await joule.invoke({gas: Number(gasLimit1 * 2 + 100000)});
 
@@ -431,8 +430,8 @@ contract('JouleCommon', (accounts, createJoule) => {
         const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
 
-        await joule.register(address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
-        await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, nowPlus3minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
         await increaseTime(6 * MINUTE);
         await joule.invoke({gas: Number(gasLimit1 + 100000)});
 
@@ -445,7 +444,7 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         const balanceBefore = await utils.getBalance(OWNER);
         const price = await joule.getPrice(gasLimit1, gasPrice1);
-        const tx = await joule.register(address, fiveMinutesInFuture, gasLimit1, gasPrice1, {
+        const tx = await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {
             value: price.add(price),
             gasPrice: gasPrice1
         });
@@ -468,25 +467,25 @@ contract('JouleCommon', (accounts, createJoule) => {
         const price = await joule.getPrice(gasLimit1, gasPrice1);
         const price12 = await joule.getPrice(gasLimit1, gasPrice2);
         const price21 = await joule.getPrice(gasLimit2, gasPrice1);
-        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
         // duplicate in the head
-        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price})
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price})
             .should.be.eventually.rejected;
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
         // duplicate address and time, but other price
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice2, {value: price12})
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice2, {value: price12})
             .should.be.eventually.rejected;
         // duplicate address and time, but other gas
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit2, gasPrice1, {value: price21})
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit2, gasPrice1, {value: price21})
             .should.be.eventually.rejected;
 
-        await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
         // duplicate in the middle
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price})
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price})
             .should.be.eventually.rejected;
         // duplicate at the end
-        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price})
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price})
             .should.be.eventually.rejected;
     });
 
@@ -496,39 +495,39 @@ contract('JouleCommon', (accounts, createJoule) => {
         const contract200k = await Contract200kGas.new();
 
         const price = await joule.getPrice(gasLimit1, gasPrice1);
-        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        const firstSingleKey = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        const firstSingleKey = await joule.findKey(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1);
         firstSingleKey.should.be.equals(ZERO_BYTES32, "first (single) key must be zero");
 
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        const secondKey = await joule.findKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        const secondKey = await joule.findKey(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1);
         String(secondKey).should.be.equals(
-            toKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1),
+            toKey(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1),
             "key for second value must be previous key"
         );
 
-        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        await joule.register(contract100k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        const fiveKey = await joule.findKey(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
-        String(fiveKey).should.be.equals(toKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1),
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        const fiveKey = await joule.findKey(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+        String(fiveKey).should.be.equals(toKey(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1),
             "key should be previous added contract with the same time");
-        await joule.register(contract200k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
         // check insert before
-        await joule.register(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        const secondKeyAgain = await joule.findKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
+        await joule.register(contract200k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        const secondKeyAgain = await joule.findKey(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1);
         String(secondKeyAgain).should.be.equals(
-            toKey(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1),
+            toKey(contract200k.address, nowPlus3minutes, gasLimit1, gasPrice1),
             "key for second value must be just added contract with low time"
         );
 
-        await joule.register(contract200k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
 
-        const firstKey = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        const firstKey = await joule.findKey(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1);
         firstKey.should.be.equals(ZERO_BYTES32, "first key must be zero");
 
-        const fiveKeyAgain = await joule.findKey(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1);
-        String(fiveKeyAgain).should.be.equals(toKey(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1),
+        const fiveKeyAgain = await joule.findKey(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+        String(fiveKeyAgain).should.be.equals(toKey(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1),
             "key should be previous added contract with the same time, without changing after insert");
 
     });
@@ -539,42 +538,42 @@ contract('JouleCommon', (accounts, createJoule) => {
         const contract200k = await Contract200kGas.new();
 
         const price = await joule.getPrice(gasLimit1, gasPrice1);
-        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        await joule.register(contract100k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
 
         // to remove
-        await joule.register(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
 
-        await joule.register(contract100k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        await joule.register(contract200k.address, fiveMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
 
         // te remove
-        await joule.register(contract200k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
 
-        await joule.register(contract200k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
-        await joule.register(contract200k.address, nineMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
 
         // check fist
         const topBefore = await joule.getTopOnce();
         topBefore[2].should.be.bignumber.equals(BigNumber(gasLimit1), "first should be");
         topBefore[0].should.be.equals(contract100k.address, "first should be");
-        topBefore[1].should.be.bignumber.equals(BigNumber(threeMinutesInFuture), "first should be");
+        topBefore[1].should.be.bignumber.equals(BigNumber(nowPlus3minutes), "first should be");
 
-        const keyFirst = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
-        await joule.unregister(keyFirst, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {gasPrice: 0});
+        const keyFirst = await joule.findKey(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1);
+        await joule.unregister(keyFirst, contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {gasPrice: 0});
         const topAfter = await joule.getTopOnce();
         topAfter[2].should.be.bignumber.equals(BigNumber(0), "gas for removed contract should be 0");
 
         // check middle
-        const key = await joule.findKey(contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1);
+        const key = await joule.findKey(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1);
         const balanceBefore = await utils.getBalance(OWNER);
-        await joule.unregister(key, contract100k.address, sevenMinutesInFuture, gasLimit1, gasPrice1, {gasPrice: 0});
+        await joule.unregister(key, contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {gasPrice: 0});
         const balanceAfter = await utils.getBalance(OWNER);
         const deltaBalance = balanceAfter.minus(balanceBefore).abs();
         deltaBalance.should.be.bignumber.equals(BigNumber(gasLimit1).times(gasPrice1), "should be returned only gas * price, without extra");
 
         // check invoke
-        await increaseTime(nineMinutesInFuture + 1);
+        await increaseTime(nowPlus9minutes + 1);
         const balanceBeforeInvoke = await utils.getBalance(OWNER);
         await joule.invokeOnce({gasPrice: 0});
         const balanceAfterInvoke = await utils.getBalance(OWNER);
@@ -593,10 +592,10 @@ contract('JouleCommon', (accounts, createJoule) => {
         const gasPrice = web3.toWei(BigNumber(40), 'gwei');
         const price = await joule.getPrice(gasLimit, gasPrice);
 
-        await joule.register(contract0k.address, threeMinutesInFuture, gasLimit, gasPrice, {value: price});
-        await joule.register(contract100k.address, threeMinutesInFuture, gasLimit, gasPrice, {value: price});
+        await joule.register(contract0k.address, nowPlus3minutes, gasLimit, gasPrice, {value: price});
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit, gasPrice, {value: price});
 
-        const key = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit, gasPrice);
+        const key = await joule.findKey(contract100k.address, nowPlus3minutes, gasLimit, gasPrice);
         key.should.be.not.equals(ZERO_BYTES32, "must not be empty key");
     });
 
@@ -605,13 +604,13 @@ contract('JouleCommon', (accounts, createJoule) => {
         const contract100k = await Contract100kGas.new();
 
         const price = await joule.getPrice(gasLimit1, gasPrice1);
-        await joule.registerFor(SECOND_OWNER, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+        await joule.registerFor(SECOND_OWNER, contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
 
-        const key = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        const key = await joule.findKey(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1);
         // unregister by owner should be rejected
-        await joule.unregister(key, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1)
+        await joule.unregister(key, contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1)
             .should.be.eventually.rejected;
-        await joule.unregister(key, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {from: SECOND_OWNER});
+        await joule.unregister(key, contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {from: SECOND_OWNER});
     });
 
     // it('#16 unregister', async () => {
