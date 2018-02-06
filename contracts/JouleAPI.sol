@@ -37,6 +37,7 @@ contract JouleAPI {
      * @notice Only registrant can remove their registration.
      * @notice Only registrations in future can be removed.
      *
+     * @param _key          Contract key, to fast finding during unregister. See findKey method for getting key.
      * @param _address      Contract's address. Contract MUST implements Checkable interface.
      * @param _timestamp    Timestamp at what moment contract should be called. It MUST be in future.
      * @param _gasLimit     Gas which will be posted to call.
