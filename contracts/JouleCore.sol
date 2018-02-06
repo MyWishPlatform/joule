@@ -28,6 +28,8 @@ contract JouleCore is JouleContractHolder {
         // from 1 gwei to 0x100000000 gwei
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI);
+        // 0 means not yet registered
+        require(_registrant != 0x0);
 
         uint innerGasPrice = _gasPrice / GWEI;
         insert(_address, _timestamp, _gasLimit, innerGasPrice);
