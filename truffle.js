@@ -24,7 +24,7 @@ module.exports = {
             port: 8545,
             network_id: "*" // Match any network id
         },
-        development: ganacheConfig(),
+        develop: ganacheConfig(),
         debug: {
             host: "localhost",
             port: 9545,

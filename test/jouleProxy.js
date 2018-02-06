@@ -39,6 +39,9 @@ contract('Joule', accounts => {
     let snapshotId;
 
     beforeEach(async () => {
+        // if (typeof snapshotId !== 'undefined') {
+        //     await revert(snapshotId);
+        // }
         snapshotId = (await snapshot()).result;
         const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
         initTime(latestBlock.timestamp);

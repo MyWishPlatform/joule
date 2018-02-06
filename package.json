@@ -6,7 +6,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./test.sh"
   },
   "authors": [
     "Val Dubrava <vd@mywish.io>",
@@ -22,7 +22,7 @@
     "ganache-cli": "^6.0.3",
     "random-seed": "^0.3.0",
     "solc": "^0.4.19",
-    "truffle": "^4.0.4",
+    "truffle": "^4.0.6",
     "zeppelin-solidity": "^1.5.0"
   }
 }

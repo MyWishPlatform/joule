@@ -55,6 +55,7 @@ initTime(new Date("2017-10-10T15:00:00Z").getTime() / 1000);
 contract('JouleCommon', (accounts, createJoule) => {
     const OWNER = accounts[0];
     const SENDER = accounts[1];
+    const SECOND_OWNER = accounts[2];
 
     const addresses = accounts;
 
@@ -79,6 +80,7 @@ contract('JouleCommon', (accounts, createJoule) => {
     const toHexWithIntPadding = (value) => ("00000000" + BigNumber(value).toString(16)).substr(-8, 8);
     const toKey = (address, timestamp, gas, price) => address + toHexWithIntPadding(timestamp) + toHexWithIntPadding(gas) + toHexWithIntPadding(BigNumber(price).div(GWEI));
 
+    console.info(OWNER, SENDER, SECOND_OWNER);
     it('#0 gas usage', async () => {
         const joule = await createJoule();
         const contract0k = await Contract0kGas.new();
@@ -596,6 +598,20 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         const key = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit, gasPrice);
         key.should.be.not.equals(ZERO_BYTES32, "must not be empty key");
+    });
+
+    it('#18 register for, then unregister', async () => {
+        const joule = await createJoule();
+        const contract100k = await Contract100kGas.new();
+
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.registerFor(SECOND_OWNER, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {value: price});
+
+        const key = await joule.findKey(contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1);
+        // unregister by owner should be rejected
+        await joule.unregister(key, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1)
+            .should.be.eventually.rejected;
+        await joule.unregister(key, contract100k.address, threeMinutesInFuture, gasLimit1, gasPrice1, {from: SECOND_OWNER});
     });
 
     // it('#16 unregister', async () => {
