@@ -9,7 +9,7 @@ contract JouleIndex is Ownable  {
     uint constant YEAR = 0x1DFE200;
     bytes32 constant HEAD = 0x0;
 
-    // year -> month -> day -> hour
+    // YEAR -> week -> hour -> minute
     JouleStorage public state;
 
     function JouleIndex(JouleStorage _storage) public {
