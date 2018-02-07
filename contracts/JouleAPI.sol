@@ -110,7 +110,7 @@ contract JouleAPI {
     );
 
     /**
-     * @dev Gets the next contract by the specified previous in order to invoke.
+     * @dev Gets one next contract by the specified previous in order to invoke.
      *
      * @param _contractAddress  The previous contract address.
      * @param _timestamp        The previous invocation timestamp.
@@ -122,7 +122,7 @@ contract JouleAPI {
      * @return invokeGas        The minimal amount of gas to invoke (including gas for joule).
      * @return rewardAmount     The amount of reward for invocation.
      */
-    function getNext(address _contractAddress,
+    function getNextOnce(address _contractAddress,
                      uint _timestamp,
                      uint _gasLimit,
                      uint _gasPrice) public view returns (
@@ -132,6 +132,34 @@ contract JouleAPI {
         uint gasPrice,
         uint invokeGas,
         uint rewardAmount
+    );
+
+    /**
+     * @dev Gets _count next contracts by the specified previous in order to invoke.
+     * @notice Unlike getTop this method return exact _count values.
+     *
+     * @param _count            The count of result contracts.
+     * @param _contractAddress  The previous contract address.
+     * @param _timestamp        The previous invocation timestamp.
+     * @param _gasLimit         The previous invocation maximum gas.
+     * @param _gasPrice         The previous invocation expected price.
+     * @return contractAddress  The contract address.
+     * @return gasLimit         The contract gas.
+     * @return gasPrice         The invocation expected price.
+     * @return invokeGas        The minimal amount of gas to invoke (including gas for joule).
+     * @return rewardAmount     The amount of reward for invocation.
+     */
+    function getNext(uint _count,
+                address _contractAddress,
+                uint _timestamp,
+                uint _gasLimit,
+                uint _gasPrice) external view returns (
+        address[] addresses,
+        uint[] timestamps,
+        uint[] gasLimits,
+        uint[] gasPrices,
+        uint[] invokeGases,
+        uint[] rewardAmounts
     );
 
     /**

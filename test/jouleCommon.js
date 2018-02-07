@@ -67,6 +67,7 @@ contract('JouleCommon', (accounts, createJoule) => {
     const ETH = web3.toWei(BigNumber(1), 'ether');
     const GWEI = web3.toWei(BigNumber(1), 'gwei');
     const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
     const gasPrice1 = web3.toWei(2, 'gwei');
     const gasPrice2 = web3.toWei(3, 'gwei');
     const gasPrice3 = web3.toWei(4, 'gwei');
@@ -613,9 +614,49 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.unregister(key, contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {from: SECOND_OWNER});
     });
 
-    // it('#16 unregister', async () => {
-    //
-    // });
+    it('#19 getNextOnce/getNext', async () => {
+        const joule = await createJoule();
+        const contract100k = await Contract100kGas.new();
+        const contract200k = await Contract200kGas.new();
 
-        // TODO: register for/invoke for
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+
+        const once = await joule.getNextOnce(0, 0, 0, 0);
+        const top = await joule.getTopOnce();
+
+        once.length.should.be.equals(top.length, "getNextOnce with zeroes should returns the same like getTopOnce");
+        once[0].should.be.equals(top[0], "getNextOnce with zeroes should returns the same like getTopOnce");
+        once[0].should.be.equals(contract100k.address, "getNextOnce should return first registered");
+        String(once[1]).should.be.equals(String(nowPlus3minutes), "getNextOnce should return first registered");
+
+        const second = await joule.getNextOnce(once[0], once[1], once[2], once[3]);
+        second[0].should.be.equals(contract200k.address);
+        String(second[1]).should.be.equals(String(nowPlus3minutes));
+
+        const multi5first = await joule.getNext(5, 0, 0, 0, 0);
+        multi5first[0].length.should.be.equals(5);
+        multi5first[0][0].should.be.equals(contract100k.address);
+        multi5first[0][1].should.be.equals(contract200k.address);
+
+        String(multi5first[1][0]).should.be.equals(String(nowPlus3minutes));
+        String(multi5first[1][2]).should.be.equals(String(nowPlus5minutes));
+
+        const multi5next = await joule.getNext(5, multi5first[0][4], multi5first[1][4], multi5first[2][4], multi5first[3][4]);
+        multi5next[0].length.should.be.equals(5);
+
+        // 6th registration
+        multi5next[0][0].should.be.equals(contract200k.address);
+        String(multi5next[1][0]).should.be.equals(String(nowPlus7minutes));
+
+        multi5next[0][4].should.be.equals(ZERO_ADDRESS);
+        String(multi5next[1][4]).should.be.equals(String(0));
+    });
 });
