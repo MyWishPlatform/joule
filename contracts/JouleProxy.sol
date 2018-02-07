@@ -90,7 +90,7 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getTopOnce();
     }
 
-    function getNext(address _contractAddress,
+    function getNextOnce(address _contractAddress,
                      uint _timestamp,
                      uint _gasLimit,
                      uint _gasPrice) public view returns (
@@ -101,8 +101,41 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         uint invokeGas,
         uint rewardAmount
     ) {
-        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNext(_contractAddress, _timestamp, _gasLimit, _gasPrice);
+        (contractAddress, timestamp, gasLimit, gasPrice, invokeGas, rewardAmount) = joule.getNextOnce(_contractAddress, _timestamp, _gasLimit, _gasPrice);
     }
+
+
+    function getNext(uint _count,
+                    address _contractAddress,
+                    uint _timestamp,
+                    uint _gasLimit,
+                    uint _gasPrice) external view returns (
+        address[] _addresses,
+        uint[] _timestamps,
+        uint[] _gasLimits,
+        uint[] _gasPrices,
+        uint[] _invokeGases,
+        uint[] _rewardAmounts
+    ) {
+        _addresses = new address[](_count);
+        _timestamps = new uint[](_count);
+        _gasLimits = new uint[](_count);
+        _gasPrices = new uint[](_count);
+        _invokeGases = new uint[](_count);
+        _rewardAmounts = new uint[](_count);
+
+        uint i = 0;
+
+        (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNextOnce(_contractAddress, _timestamp, _gasLimit, _gasPrice);
+
+        for (i += 1; i < _count; i ++) {
+            if (_timestamps[i - 1] == 0) {
+                break;
+            }
+            (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNextOnce(_addresses[i - 1], _timestamps[i - 1], _gasLimits[i - 1], _gasPrices[i - 1]);
+        }
+    }
+
 
     function getTop(uint _count) external view returns (
         address[] _addresses,
@@ -127,7 +160,7 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
         (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getTopOnce();
 
         for (i += 1; i < amount; i ++) {
-            (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNext(_addresses[i - 1], _timestamps[i - 1], _gasLimits[i - 1], _gasPrices[i - 1]);
+            (_addresses[i], _timestamps[i], _gasLimits[i], _gasPrices[i], _invokeGases[i], _rewardAmounts[i]) = joule.getNextOnce(_addresses[i - 1], _timestamps[i - 1], _gasLimits[i - 1], _gasPrices[i - 1]);
         }
     }
 

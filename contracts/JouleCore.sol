@@ -149,7 +149,7 @@ contract JouleCore is JouleContractHolder {
         rewardAmount = invokeGas * gasPrice;
     }
 
-    function getNext(address _contractAddress,
+    function getNextOnce(address _contractAddress,
                      uint _timestamp,
                      uint _gasLimit,
                      uint _gasPrice) public view returns (
@@ -175,6 +175,49 @@ contract JouleCore is JouleContractHolder {
         invokeGas = gasLimit + IDLE_GAS;
         rewardAmount = invokeGas * gasPrice;
     }
+
+    function getNext(uint _count,
+                    address _contractAddress,
+                    uint _timestamp,
+                    uint _gasLimit,
+                    uint _gasPrice) external view returns (address[] _addresses,
+                                                        uint[] _timestamps,
+                                                        uint[] _gasLimits,
+                                                        uint[] _gasPrices,
+                                                        uint[] _invokeGases,
+                                                        uint[] _rewardAmounts) {
+        _addresses = new address[](_count);
+        _timestamps = new uint[](_count);
+        _gasLimits = new uint[](_count);
+        _gasPrices = new uint[](_count);
+        _invokeGases = new uint[](_count);
+        _rewardAmounts = new uint[](_count);
+
+        bytes32 prev;
+        if (_timestamp != 0) {
+            prev = KeysUtils.toKey(_contractAddress, _timestamp, _gasLimit, _gasPrice / GWEI);
+        }
+
+        uint index = 0;
+        while (index < _count) {
+            bytes32 current = getRecord(prev);
+            if (current == 0) {
+                break;
+            }
+            KeysUtils.Object memory obj = current.toObject();
+
+            _addresses[index] = obj.contractAddress;
+            _timestamps[index] = obj.timestamp;
+            _gasLimits[index] = obj.gasLimit;
+            _gasPrices[index] = obj.gasPriceGwei * GWEI;
+            _invokeGases[index] = obj.gasLimit + IDLE_GAS;
+            _rewardAmounts[index] = (obj.gasLimit + IDLE_GAS) * obj.gasPriceGwei * GWEI;
+
+            prev = current;
+            index ++;
+        }
+    }
+
 
     function innerInvoke(address _invoker) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
