@@ -68,10 +68,10 @@ contract('JouleCommon', (accounts, createJoule) => {
     const GWEI = web3.toWei(BigNumber(1), 'gwei');
     const ZERO_BYTES32 = "0x0000000000000000000000000000000000000000000000000000000000000000";
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    const gasPrice1 = web3.toWei(2, 'gwei');
-    const gasPrice2 = web3.toWei(3, 'gwei');
-    const gasPrice3 = web3.toWei(4, 'gwei');
-    const gasPrice4 = web3.toWei(5, 'gwei');
+    const gasPrice1 = web3.toWei(20, 'gwei');
+    const gasPrice2 = web3.toWei(30, 'gwei');
+    const gasPrice3 = web3.toWei(40, 'gwei');
+    const gasPrice4 = web3.toWei(50, 'gwei');
 
     const nowPlus3minutes = NOW + 3 * MINUTE;
     const nowPlus5minutes = NOW + 5 * MINUTE;
@@ -144,7 +144,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         console.info("\tdelta 100k check:", String(delta100kCheck));
         console.info('\tinner 2x100k check: ', String(inner100kCheck));
         console.info("\tsingle 2x100k check:", gas2x100kCheck);
-        console.info("\tdelta 2x100k check:", BigNumber(gas2x100kCheck).minus(inner100kCheck.times(2)).minus(21000).toString());
+        console.info("\tdelta 2x100k check:", BigNumber(gas2x100kCheck).minus(inner100kCheck.times(2)).toString());
     });
 
     it('#1 registration restrictions', async () => {
@@ -672,4 +672,18 @@ contract('JouleCommon', (accounts, createJoule) => {
         multi5next[0][4].should.be.equals(ZERO_ADDRESS);
         String(multi5next[1][4]).should.be.equals(String(0));
     });
+
+    it('#20 getMinGasPrice/gas price limit', async () => {
+        const joule = await createJoule();
+        const contract100k = await Contract100kGas.new();
+
+        const minGasPrice = await joule.getMinGasPrice();
+        String(minGasPrice).should.be.equals(String(gasPrice1));
+
+        const lessGasPrice = BigNumber(gasPrice1).minus(1);
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, lessGasPrice, {value: ETH})
+            .should.be.eventually.rejected;
+    });
+
+
 });

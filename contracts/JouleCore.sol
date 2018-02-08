@@ -7,6 +7,7 @@ import './JouleVault.sol';
 
 contract JouleCore is JouleContractHolder {
     JouleVault public vault;
+    uint32 public minGasPriceGwei = DEFAULT_MIN_GAS_PRICE_GWEI;
     using KeysUtils for bytes32;
 
     function JouleCore(JouleVault _vault, bytes32 _head, uint _length, JouleStorage _storage) public
@@ -26,8 +27,8 @@ contract JouleCore is JouleContractHolder {
         require(_gasLimit <= MAX_GAS);
         require(_gasLimit != 0);
         // from 1 gwei to 0x100000000 gwei
-        require(_gasPrice > GWEI);
-        require(_gasPrice < 0x100000000 * GWEI);
+        require(_gasPrice >= minGasPriceGwei * GWEI);
+        require(_gasPrice < MAX_GAS_PRICE);
         // 0 means not yet registered
         require(_registrant != 0x0);
 

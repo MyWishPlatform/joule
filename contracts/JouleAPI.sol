@@ -197,4 +197,9 @@ contract JouleAPI {
      * @return Code version. Mask: 0xff.0xff.0xffff-0xffffffff (major.minor.build-hash)
      */
     function getVersion() external view returns (bytes8);
+
+    /**
+     * @dev Gets minimal gas price, specified by maintainer.
+     */
+    function getMinGasPrice() public view returns (uint);
 }
