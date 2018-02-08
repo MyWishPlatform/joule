@@ -21,6 +21,12 @@ contract JouleBehindProxy is JouleCore, Ownable, TransferToken {
         _;
     }
 
+    function setMinGasPrice(uint _minGasPrice) public onlyOwner {
+        require(_minGasPrice >= MIN_GAS_PRICE);
+        require(_minGasPrice <= MAX_GAS_PRICE);
+        minGasPriceGwei = uint32(_minGasPrice / GWEI);
+    }
+
     function registerFor(address _registrant, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public payable onlyProxy returns (uint) {
         return innerRegister(_registrant, _address, _timestamp, _gasLimit, _gasPrice);
     }

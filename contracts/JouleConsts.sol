@@ -10,10 +10,16 @@ contract usingConsts {
     // joule gas - gas to joule (including proxy and others) invocation, excluding contract gas
     uint constant JOULE_GAS = TRANSACTION_GAS + REMAINING_GAS + 30000;
 
+    // minimal default gas price (because of network load)
+    uint32 constant DEFAULT_MIN_GAS_PRICE_GWEI = 20;
+    // min gas price
+    uint constant MIN_GAS_PRICE = GWEI;
+    // max gas price
+    uint constant MAX_GAS_PRICE = 0xffffffff * GWEI;
     // not, it mist be less then 0x00ffffff, because high bytes might be used for storing flags
     uint constant MAX_GAS = 4000000;
     // Code version
-    bytes8 constant VERSION = 0x0107005d0a5d7786;
+    bytes8 constant VERSION = 0x010800660d23dabf;
     //                          ^^ - major
     //                            ^^ - minor
     //                              ^^^^ - build

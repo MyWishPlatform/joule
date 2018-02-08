@@ -7,7 +7,7 @@ import './utils/TransferToken.sol';
 import './JouleProxyAPI.sol';
 import './CheckableContract.sol';
 
-contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
+contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken, usingConsts {
     JouleBehindProxy public joule;
 
     function setJoule(JouleBehindProxy _joule) public onlyOwner {
@@ -166,6 +166,10 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken {
 
     function getVersion() external view returns (bytes8) {
         return joule.getVersion();
+    }
+
+    function getMinGasPrice() public view returns (uint) {
+        return joule.minGasPriceGwei() * GWEI;
     }
 
     function callback(address _invoker, address _address, uint, uint _gasLimit, uint) public onlyJoule returns (bool) {

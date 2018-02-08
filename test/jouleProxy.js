@@ -57,7 +57,6 @@ contract('Joule', accounts => {
         const joule = await JouleNative.new(vault.address, 0, 0, storage.address);
         await vault.setJoule(joule.address);
         await storage.giveAccess(joule.address);
-        await storage.giveAccess(await joule.index());
         return joule;
     };
 
@@ -109,7 +108,6 @@ contract('JouleProxy', accounts => {
         const joule = await Joule.new(vault.address, 0, 0, storage.address);
         await vault.setJoule(joule.address);
         await storage.giveAccess(joule.address);
-        await storage.giveAccess(await joule.index());
 
         const proxy = await Proxy.new();
         await proxy.setJoule(joule.address);

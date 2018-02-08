@@ -45,4 +45,8 @@ contract Joule is JouleAPI, JouleCore {
         Invoked(_invoker, _record.contractAddress, status, gas - msg.gas);
         return status;
     }
+
+    function getMinGasPrice() public view returns (uint) {
+        return minGasPriceGwei * GWEI;
+    }
 }
