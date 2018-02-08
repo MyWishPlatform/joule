@@ -91,7 +91,7 @@ contract JouleCore is JouleContractHolder {
 
     function getPriceInner(uint _gasLimit, uint _gasPrice) internal pure returns (uint) {
         // if this logic will be changed, look also to the innerUnregister method
-        return (_gasLimit + IDLE_GAS) * _gasPrice;
+        return (_gasLimit + JOULE_GAS) * _gasPrice;
     }
 
     function getVersion() external view returns (bytes8) {
@@ -124,7 +124,7 @@ contract JouleCore is JouleContractHolder {
             _gasLimits[i] = gasLimit;
             uint gasPrice = obj.gasPriceGwei * GWEI;
             _gasPrices[i] = gasPrice;
-            uint invokeGas = gasLimit + IDLE_GAS;
+            uint invokeGas = gasLimit + JOULE_GAS;
             _invokeGases[i] = invokeGas;
             _rewardAmounts[i] = invokeGas * gasPrice;
             current = getRecord(current);
@@ -145,7 +145,7 @@ contract JouleCore is JouleContractHolder {
         timestamp = obj.timestamp;
         gasLimit = obj.gasLimit;
         gasPrice = obj.gasPriceGwei * GWEI;
-        invokeGas = gasLimit + IDLE_GAS;
+        invokeGas = gasLimit + JOULE_GAS;
         rewardAmount = invokeGas * gasPrice;
     }
 
@@ -172,7 +172,7 @@ contract JouleCore is JouleContractHolder {
         timestamp = obj.timestamp;
         gasLimit = obj.gasLimit;
         gasPrice = obj.gasPriceGwei * GWEI;
-        invokeGas = gasLimit + IDLE_GAS;
+        invokeGas = gasLimit + JOULE_GAS;
         rewardAmount = invokeGas * gasPrice;
     }
 
@@ -210,8 +210,8 @@ contract JouleCore is JouleContractHolder {
             _timestamps[index] = obj.timestamp;
             _gasLimits[index] = obj.gasLimit;
             _gasPrices[index] = obj.gasPriceGwei * GWEI;
-            _invokeGases[index] = obj.gasLimit + IDLE_GAS;
-            _rewardAmounts[index] = (obj.gasLimit + IDLE_GAS) * obj.gasPriceGwei * GWEI;
+            _invokeGases[index] = obj.gasLimit + JOULE_GAS;
+            _rewardAmounts[index] = (obj.gasLimit + JOULE_GAS) * obj.gasPriceGwei * GWEI;
 
             prev = current;
             index ++;
