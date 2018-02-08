@@ -91,6 +91,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         const gasLimit = BigNumber(100000);
         const gasPrice = web3.toWei(BigNumber(40), 'gwei');
         const price = await joule.getPrice(gasLimit, gasPrice);
+        const jouleGas = price.minus(BigNumber(gasLimit).times(gasPrice)).div(gasPrice);
 
         await joule.register(contract0k.address, nowPlus3minutes, gasLimit, gasPrice, {value: price});
         await joule.register(contract100k.address, nowPlus5minutes, gasLimit, gasPrice, {value: price});
@@ -106,6 +107,9 @@ contract('JouleCommon', (accounts, createJoule) => {
         const tx = await joule.invoke({gas: gasLimit.times(2)});
         tx.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
         tx.logs[0].args._status.should.be.true;
+        const inner0kCheck = tx.logs[0].args._usedGas;
+        const delta0kCheck = BigNumber(gas0kCheck).minus(inner0kCheck);
+        jouleGas.should.be.bignumber.gte(delta0kCheck);
 
         await increaseTime(2 * MINUTE);
 
@@ -113,6 +117,9 @@ contract('JouleCommon', (accounts, createJoule) => {
         const tx100k = await joule.invoke({gas: gasLimit.times(2)});
         tx100k.logs[0].event.should.be.equals('Invoked', 'checked event expected.');
         tx100k.logs[0].args._status.should.be.true;
+        const inner100kCheck = tx100k.logs[0].args._usedGas;
+        const delta100kCheck = BigNumber(gas100kCheck).minus(inner100kCheck);
+        jouleGas.should.be.bignumber.gte(delta100kCheck);
 
         await increaseTime(4 * MINUTE);
 
@@ -123,15 +130,21 @@ contract('JouleCommon', (accounts, createJoule) => {
         tx2x100k.logs[0].args._status.should.be.true;
         tx2x100k.logs[1].event.should.be.equals('Invoked', 'checked event expected.');
         tx2x100k.logs[1].args._status.should.be.true;
+        tx2x100k.logs[0].args._usedGas
+            .plus(tx2x100k.logs[1].args._usedGas)
+            .should.be.bignumber.equals(inner100kCheck.times(2));
 
         console.info('Gas usages:');
         console.info("\tidle:", gasIdle);
-        console.info('\tinner 0k check: ', String(tx.logs[0].args._usedGas));
+        console.info('\tinner 0k check: ', String(inner0kCheck));
         console.info("\tsingle 0k check:", gas0kCheck);
-        console.info('\tinner 100k check: ', String(tx100k.logs[0].args._usedGas));
+        console.info("\tdelta 0k check:", String(delta0kCheck));
+        console.info('\tinner 100k check: ', String(inner100kCheck));
         console.info("\tsingle 100k check:", gas100kCheck);
-        console.info('\tinner 2x100k check: ', String(tx2x100k.logs[0].args._usedGas));
+        console.info("\tdelta 100k check:", String(delta100kCheck));
+        console.info('\tinner 2x100k check: ', String(inner100kCheck));
         console.info("\tsingle 2x100k check:", gas2x100kCheck);
+        console.info("\tdelta 2x100k check:", BigNumber(gas2x100kCheck).minus(inner100kCheck.times(2)).minus(21000).toString());
     });
 
     it('#1 registration restrictions', async () => {
@@ -421,7 +434,7 @@ contract('JouleCommon', (accounts, createJoule) => {
 
         await joule.register(address, nowPlus3minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
         await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
-        await increaseTime(4 * MINUTE);
+        await increaseTime(3 * MINUTE);
         await joule.invoke({gas: Number(gasLimit1 * 2 + 100000)});
 
         Number(await joule.getCount()).should.be.equals(1);
