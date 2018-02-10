@@ -397,7 +397,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.register(address3, nowPlus5minutes, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
 
         await increaseTime(4 * MINUTE);
-        await joule.invoke({gas: Number(gasLimit2 + gasLimit3 + JOULE_GAS)});
+        await joule.invoke({gas: Number(gasLimit2 + gasLimit3 + JOULE_GAS * 2)});
         await joule.register(address1, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
         Number(await joule.getCount()).should.be.equals(3);

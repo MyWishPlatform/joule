@@ -30,37 +30,6 @@ const initTime = (now) => {
 
 initTime(new Date("2017-10-10T15:00:00Z").getTime() / 1000);
 
-contract('Joule', accounts => {
-    let snapshotId;
-
-    beforeEach(async () => {
-        // if (typeof snapshotId !== 'undefined') {
-        //     await revert(snapshotId);
-        // }
-        snapshotId = (await snapshot()).result;
-        const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
-        initTime(latestBlock.timestamp);
-    });
-
-    afterEach(async () => {
-        await revert(snapshotId);
-    });
-
-    const createJoule = async () => {
-        const vault = await Vault.new();
-        const storage = await Storage.new();
-        const joule = await JouleNative.new(vault.address, 0, 0, storage.address);
-        await vault.setJoule(joule.address);
-        await storage.giveAccess(joule.address);
-        return joule;
-    };
-
-    commonTest.init(accounts, createJoule);
-    commonTest.forEachTest(function (test) {
-        it(test.name, test.test);
-    });
-});
-
 contract('JouleProxy', accounts => {
     let snapshotId;
 
