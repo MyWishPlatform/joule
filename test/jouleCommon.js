@@ -42,6 +42,8 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+const JOULE_GAS = 62000;
+
 let NOW, TOMORROW, DAY_AFTER_TOMORROW;
 
 const initTime = (now) => {
@@ -273,7 +275,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.register(address2, nowPlus5minutes, gasLimit2, gasPrice2, {value: price2});
         await joule.register(address1, nowPlus3minutes, gasLimit1, gasPrice1, {value: price1});
         await increaseTime(6 * MINUTE);
-        await joule.invoke({gas: Number(gasLimit1 + 50000)});
+        await joule.invoke({gas: Number(gasLimit1 + JOULE_GAS)});
 
         Number(await joule.getCount()).should.be.equals(1);
 
@@ -297,7 +299,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         await increaseTime(nowPlus3minutes);
 
         const balanceBefore = await utils.getBalance(SENDER);
-        await joule.invoke({from: SENDER, gasPrice: gasPrice1, gas: gasLimit + 50000});
+        await joule.invoke({from: SENDER, gasPrice: gasPrice1, gas: gasLimit + JOULE_GAS});
         const balanceAfter = await utils.getBalance(SENDER);
         // console.info(String(balanceBefore), '<=', String(balanceAfter));
         BigNumber(balanceBefore).comparedTo(BigNumber(balanceAfter)).should.be.lte(0, 'balanceBefore <= balanceAfter');
@@ -317,7 +319,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.register(address1, nowPlus3minutes, gasLimit1, gasPrice1, {value: price1});
 
         await increaseTime(6 * MINUTE);
-        await joule.invoke({gas: Number(gasLimit1 + gasLimit2 + 50000)});
+        await joule.invoke({gas: Number(gasLimit1 + gasLimit2 + JOULE_GAS * 2)});
 
         Number(await joule.getCount()).should.be.equals(0);
     });
@@ -395,7 +397,7 @@ contract('JouleCommon', (accounts, createJoule) => {
         await joule.register(address3, nowPlus5minutes, gasLimit3, gasPrice3, {value: await joule.getPrice(gasLimit3, gasPrice3)});
 
         await increaseTime(4 * MINUTE);
-        await joule.invoke({gas: Number(gasLimit2 + gasLimit3 + 50000)});
+        await joule.invoke({gas: Number(gasLimit2 + gasLimit3 + JOULE_GAS)});
         await joule.register(address1, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
 
         Number(await joule.getCount()).should.be.equals(3);
@@ -685,5 +687,45 @@ contract('JouleCommon', (accounts, createJoule) => {
             .should.be.eventually.rejected;
     });
 
+    it('#21 untegister last then add to the end', async () => {
+        const joule = await createJoule();
+        const contract100k = await Contract100kGas.new();
+        const contract200k = await Contract200kGas.new();
+
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.register(contract100k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract200k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        // 1: get key, remove
+        await joule.register(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        // 2: get key (2,3,4,5), remove
+        await joule.register(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        // 5: failed, because key is obsolete
+        await joule.register(contract200k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
+        // 4
+        await joule.register(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract100k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+        // 3
+        await joule.register(contract200k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+
+        const key1 = await joule.findKey(contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+        await joule.unregister(key1, contract100k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+
+        const key2 = await joule.findKey(contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+        const key3 = await joule.findKey(contract200k.address, nowPlus9minutes, gasLimit1, gasPrice1);
+        const key4 = await joule.findKey(contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1);
+        const key5 = await joule.findKey(contract200k.address, nowPlus7minutes, gasLimit1, gasPrice1);
+
+        await joule.unregister(key2, contract200k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+        await joule.unregister(key3, contract200k.address, nowPlus9minutes, gasLimit1, gasPrice1);
+        await joule.unregister(key4, contract100k.address, nowPlus7minutes, gasLimit1, gasPrice1);
+        await joule.unregister(key5, contract200k.address, nowPlus7minutes, gasLimit1, gasPrice1)
+            .should.eventually.be.rejected;
+
+        const top = await joule.getTop(50);
+        String(top[2][2]).should.be.equals("0");
+        String(top[2][3]).should.be.equals("0");
+        String(top[2][4]).should.be.not.equals("0");
+        String(top[2][5]).should.be.equals("0");
+    });
 
 });

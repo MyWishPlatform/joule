@@ -2,7 +2,6 @@ const chai = require("chai");
 chai.use(require("chai-as-promised"));
 chai.should();
 const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
-const {printNextContracts, printTxLogs} = require('./jouleUtils');
 const utils = require('./web3Utils');
 const BigNumber = require('bignumber.js');
 chai.use(require("chai-bignumber")(BigNumber));
@@ -53,40 +52,6 @@ contract('Joule', accounts => {
         await vault.setJoule(joule.address);
         await storage.giveAccess(joule.address);
         return joule;
-    };
-
-    commonTest.init(accounts, createJoule);
-    commonTest.forEachTest(function (test) {
-        it(test.name, test.test);
-    });
-});
-
-contract('JouleProxy', accounts => {
-    let snapshotId;
-
-    beforeEach(async () => {
-        snapshotId = (await snapshot()).result;
-        const latestBlock = await utils.web3async(web3.eth, web3.eth.getBlock, 'latest');
-        initTime(latestBlock.timestamp);
-    });
-
-    afterEach(async () => {
-        await revert(snapshotId);
-    });
-
-    const createJoule = async() => {
-        const vault = await Vault.new();
-        const storage = await Storage.new();
-
-        const joule = await Joule.new(vault.address, 0, 0, storage.address);
-        await vault.setJoule(joule.address);
-        await storage.giveAccess(joule.address);
-
-        const proxy = await Proxy.new();
-        await proxy.setJoule(joule.address);
-        await joule.setProxy(proxy.address);
-
-        return proxy;
     };
 
     commonTest.init(accounts, createJoule);
