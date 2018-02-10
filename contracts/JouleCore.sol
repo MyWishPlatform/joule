@@ -54,6 +54,11 @@ contract JouleCore is JouleContractHolder {
         return address(state.get(id));
     }
 
+    function delRegistrant(KeysUtils.Object memory current) internal {
+        bytes32 id = KeysUtils.toKey(current.contractAddress, current.timestamp, 0, 0);
+        state.del(id);
+    }
+
     function findKey(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) public view returns (bytes32) {
         require(_address != 0);
         require(_timestamp > now);
@@ -219,6 +224,11 @@ contract JouleCore is JouleContractHolder {
         }
     }
 
+    function next(KeysUtils.Object memory current) internal {
+        delRegistrant(current);
+        next();
+    }
+
 
     function innerInvoke(address _invoker) internal returns (uint _amount) {
         KeysUtils.Object memory current = KeysUtils.toObject(head);
@@ -230,7 +240,8 @@ contract JouleCore is JouleContractHolder {
             }
 
             amount += getPriceInner(current.gasLimit, current.gasPriceGwei * GWEI);
-            current = next();
+            next(current);
+            current = head.toObject();
         }
         if (amount > 0) {
             vault.withdraw(msg.sender, amount);
@@ -239,8 +250,8 @@ contract JouleCore is JouleContractHolder {
     }
 
     function innerInvokeOnce(address _invoker) internal returns (uint _amount) {
-        KeysUtils.Object memory current = KeysUtils.toObject(head);
-        next();
+        KeysUtils.Object memory current = head.toObject();
+        next(current);
         if (current.gasLimit != 0) {
             invokeCallback(_invoker, current);
         }

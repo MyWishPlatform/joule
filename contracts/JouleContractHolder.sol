@@ -59,15 +59,13 @@ contract JouleContractHolder is JouleIndexCore, usingConsts {
 
         require(state.get(_key) == id);
         state.set(_key, newId);
-        bytes32 afterUpdate = state.get(id);
-        state.set(newId, afterUpdate);
+        state.swap(id, newId);
         updateIndex(id, newId);
     }
 
-    function next() internal returns (KeysUtils.Object memory _next) {
-        head = state.get(head);
+    function next() internal {
+        head = state.getAndDel(head);
         length--;
-        _next = head.toObject();
     }
 
     function getCount() public view returns (uint) {
