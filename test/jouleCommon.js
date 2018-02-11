@@ -422,11 +422,44 @@ contract('JouleCommon', (accounts, createJoule) => {
     it('#10 check with low gas', async () => {
         const joule = await createJoule();
         const address = (await Contract100kGas.new()).address;
-        await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {value: await joule.getPrice(gasLimit1, gasPrice1)});
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+        await joule.register(address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+        // await increaseTime(2 * MINUTE);
+        // await joule.register(address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
 
-        await increaseTime(6 * MINUTE);
-        await joule.invoke({gas: Number(gasLimit1 / 2)});
+        const top = await joule.getTop(1);
+        const gas = top[4][0];
 
+        await increaseTime(3 * MINUTE);
+        // this gas is enough, because joule has some optimization
+        // await joule.invoke({gas: BigNumber(gas).minus(1000)});
+        // Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(5000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(10000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(15000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(20000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(25000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(30000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(40000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).minus(50000)});
+        Number(await joule.getCount()).should.be.equals(1);
+
+        await joule.invoke({gas: BigNumber(gas).div(2)});
         Number(await joule.getCount()).should.be.equals(1);
     });
 
@@ -728,4 +761,5 @@ contract('JouleCommon', (accounts, createJoule) => {
         String(top[2][5]).should.be.equals("0");
     });
 
+    // TODO: check that invoke with not enough gas is not reverted
 });
