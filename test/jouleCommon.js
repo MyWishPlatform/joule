@@ -761,5 +761,32 @@ contract('JouleCommon', (accounts, createJoule) => {
         String(top[2][5]).should.be.equals("0");
     });
 
+    it('#22 register several contracts with same ts and unregister last', async () => {
+        const contract0k = await Contract0kGas.new();
+        const contract100k = await Contract100kGas.new();
+        const contract200k = await Contract200kGas.new();
+        const contract300k = await Contract300kGas.new();
+
+        const gasLimit = BigNumber(100000);
+        const gasPrice = web3.toWei(BigNumber(40), 'gwei');
+
+        const addresses = [
+            contract0k.address,
+            contract100k.address,
+            contract200k.address,
+            contract300k.address
+        ];
+
+        for (let lastAddressIndex = 0; lastAddressIndex < addresses.length; lastAddressIndex++) {
+            const joule = await createJoule();
+            const price = await joule.getPrice(gasLimit, gasPrice);
+            for (let i = 0; i <= lastAddressIndex; i++) {
+                await joule.register(addresses[i], nowPlus5minutes, gasLimit, gasPrice, {value: price});
+            }
+            const key = await joule.findKey(addresses[lastAddressIndex], nowPlus5minutes, gasLimit, gasPrice);
+            await joule.unregister(key, addresses[lastAddressIndex], nowPlus5minutes, gasLimit, gasPrice);
+        }
+    });
+
     // TODO: check that invoke with not enough gas is not reverted
 });
