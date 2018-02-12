@@ -86,13 +86,14 @@ contract JouleContractHolder is JouleIndexCore, usingConsts {
      */
     function findPrevious(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal view returns (bytes32) {
         bytes32 target = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
-        if (target == head) {
+        bytes32 previous = head;
+        if (target == previous) {
             return 0;
         }
-        if (target.getTimestamp() == head.getTimestamp()) {
-            return head;
+        // if it is not head time
+        if (_timestamp != previous.getTimestamp()) {
+            previous = findFloorKeyIndex(_timestamp - 1);
         }
-        bytes32 previous = findFloorKeyIndex(_timestamp - 1);
         bytes32 current = state.get(previous);
         while (current != target) {
             previous = current;
