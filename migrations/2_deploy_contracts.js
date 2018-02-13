@@ -1,4 +1,4 @@
-const JouleNative = artifacts.require("./Joule.sol");
+const JouleNative = artifacts.require("./JouleCore.sol");
 const Joule = artifacts.require("./JouleBehindProxy.sol");
 const Proxy = artifacts.require("./JouleProxy.sol");
 const Storage = artifacts.require("./JouleStorage.sol");
@@ -37,15 +37,15 @@ module.exports = function(deployer, network, accounts) {
             return Storage.deployed()
                 .then (function (storageInstance) {
                     console.info("Storage give access to joule");
-                    return storageInstance.giveAccess(jouleInstance.address)
-                        .then (function () {
-                            console.info("get Index address");
-                            return jouleInstance.index()
-                                .then (function (indexAddress) {
-                                    console.info("Storage give access to index");
-                                    return storageInstance.giveAccess(indexAddress);
-                                });
-                        });
+                    return storageInstance.giveAccess(jouleInstance.address);
+                        // .then (function () {
+                        //     console.info("get Index address");
+                        //     return jouleInstance.index()
+                        //         .then (function (indexAddress) {
+                        //             console.info("Storage give access to index");
+                        //             return storageInstance.giveAccess(indexAddress);
+                        //         });
+                        // });
                 })
                 .then(function () {
                     console.info("get Vault address");

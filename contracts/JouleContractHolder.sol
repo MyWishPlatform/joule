@@ -1,20 +1,16 @@
 pragma solidity ^0.4.19;
 
 import './JouleConsts.sol';
-import './JouleIndex.sol';
+import './JouleIndexCore.sol';
 import './JouleStorage.sol';
 
-contract JouleContractHolder is usingConsts {
+contract JouleContractHolder is JouleIndexCore, usingConsts {
     using KeysUtils for bytes32;
-//    event Found(uint timestamp);
     uint internal length;
     bytes32 public head;
-    JouleStorage public state;
-    JouleIndex public index;
 
-    function JouleContractHolder(bytes32 _head, uint _length, JouleStorage _storage) public {
-        index = new JouleIndex(_storage);
-        state = _storage;
+    function JouleContractHolder(bytes32 _head, uint _length, JouleStorage _storage) public
+            JouleIndexCore(_storage) {
         head = _head;
         length = _length;
     }
@@ -24,11 +20,11 @@ contract JouleContractHolder is usingConsts {
         bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
         if (head == 0) {
             head = id;
-            index.insert(id);
+            insertIndex(id);
 //            Found(0xffffffff);
             return;
         }
-        bytes32 previous = index.findFloorKey(_timestamp);
+        bytes32 previous = findFloorKeyIndex(_timestamp);
 
         // reject duplicate key on the end
         require(previous != id);
@@ -48,13 +44,28 @@ contract JouleContractHolder is usingConsts {
             state.set(id, state.get(previous));
             state.set(previous, id);
         }
-        index.insert(id);
+        insertIndex(id);
     }
 
-    function next() internal returns (KeysUtils.Object memory _next) {
-        head = state.get(head);
+    function updateGas(bytes32 _key, address _address, uint _timestamp, uint _gasLimit, uint _gasPrice, uint _newGasLimit) internal {
+        bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
+        bytes32 newId = KeysUtils.toKey(_address, _timestamp, _newGasLimit, _gasPrice);
+        if (id == head) {
+            bytes32 afterHead = state.get(id);
+            head = newId;
+            state.set(newId, afterHead);
+            return;
+        }
+
+        require(state.get(_key) == id);
+        state.set(_key, newId);
+        state.swap(id, newId);
+        updateIndex(id, newId);
+    }
+
+    function next() internal {
+        head = state.getAndDel(head);
         length--;
-        _next = head.toObject();
     }
 
     function getCount() public view returns (uint) {
@@ -68,5 +79,26 @@ contract JouleContractHolder is usingConsts {
         else {
             _record = state.get(_parent);
         }
+    }
+
+    /**
+     * @dev Find previous key for existing value.
+     */
+    function findPrevious(address _address, uint _timestamp, uint _gasLimit, uint _gasPrice) internal view returns (bytes32) {
+        bytes32 target = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
+        bytes32 previous = head;
+        if (target == previous) {
+            return 0;
+        }
+        // if it is not head time
+        if (_timestamp != previous.getTimestamp()) {
+            previous = findFloorKeyIndex(_timestamp - 1);
+        }
+        bytes32 current = state.get(previous);
+        while (current != target) {
+            previous = current;
+            current = state.get(previous);
+        }
+        return previous;
     }
 }
