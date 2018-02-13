@@ -51,14 +51,12 @@ contract JouleContractHolder is JouleIndexCore, usingConsts {
         bytes32 id = KeysUtils.toKey(_address, _timestamp, _gasLimit, _gasPrice);
         bytes32 newId = KeysUtils.toKey(_address, _timestamp, _newGasLimit, _gasPrice);
         if (id == head) {
-            bytes32 afterHead = state.get(id);
             head = newId;
-            state.set(newId, afterHead);
-            return;
         }
-
-        require(state.get(_key) == id);
-        state.set(_key, newId);
+        else {
+            require(state.get(_key) == id);
+            state.set(_key, newId);
+        }
         state.swap(id, newId);
         updateIndex(id, newId);
     }

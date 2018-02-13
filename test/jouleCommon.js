@@ -788,5 +788,30 @@ contract('JouleCommon', (accounts, createJoule) => {
         }
     });
 
-    // TODO: check that invoke with not enough gas is not reverted
+    it('#23 update index, when update head', async () => {
+        const joule = await createJoule();
+        const contract0k = await Contract0kGas.new();
+        const price = await joule.getPrice(gasLimit1, gasPrice1);
+
+        await joule.register(contract0k.address, nowPlus5minutes, gasLimit1, gasPrice1, {value: price});
+        await joule.register(contract0k.address, nowPlus9minutes, gasLimit1, gasPrice1, {value: price});
+
+        // unregister head contract
+        await joule.unregister("0x0", contract0k.address, nowPlus5minutes, gasLimit1, gasPrice1);
+
+        // now it should be head
+        await joule.register(contract0k.address, nowPlus3minutes, gasLimit1, gasPrice1, {value: price});
+
+        // register immediately after unregistered
+        await joule.register(contract0k.address, nowPlus7minutes, gasLimit1, gasPrice1, {value: price});
+
+        const top = await joule.getTop(10);
+        const times = [nowPlus3minutes, nowPlus5minutes, nowPlus7minutes, nowPlus9minutes];
+        for (let i = 0; i < 4; i ++) {
+            top[0][i].should.be.equals(contract0k.address, "all addresses must be");
+            top[1][i].should.be.bignumber.equals(BigNumber(times[i]), "all timestamps must be");
+        }
+        top[2][1].should.be.bignumber.equals(BigNumber(0), "seconds must be unregistered");
+    });
+
 });
