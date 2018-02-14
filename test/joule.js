@@ -1,10 +1,11 @@
 const chai = require("chai");
-chai.use(require("chai-as-promised"));
-chai.should();
-const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
-const utils = require('./web3Utils');
 const BigNumber = require('bignumber.js');
 chai.use(require("chai-bignumber")(BigNumber));
+chai.use(require("chai-as-promised"));
+chai.should();
+
+const {increaseTime, revert, snapshot, mine} = require('./evmMethods');
+const utils = require('./web3Utils');
 
 const JouleNative = artifacts.require("./Joule.sol");
 const Joule = artifacts.require("./JouleBehindProxy.sol");
