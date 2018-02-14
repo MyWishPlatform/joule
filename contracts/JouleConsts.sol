@@ -19,7 +19,7 @@ contract usingConsts {
     // not, it mist be less then 0x00ffffff, because high bytes might be used for storing flags
     uint constant MAX_GAS = 4000000;
     // Code version
-    bytes8 constant VERSION = 0x0108007d08dbcdf0;
+    bytes8 constant VERSION = 0x0108007e075ca235;
     //                          ^^ - major
     //                            ^^ - minor
     //                              ^^^^ - build
