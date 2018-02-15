@@ -56,7 +56,7 @@ contract JouleProxy is JouleProxyAPI, JouleAPI, Ownable, TransferToken, usingCon
 
     function invokeFor(address _invoker) public returns (uint) {
         uint amount = joule.invokeFor(_invoker);
-        if (amount > 0) {
+        if (amount != 0) {
             msg.sender.transfer(amount);
         }
         return amount;
