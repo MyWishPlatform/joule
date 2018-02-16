@@ -64,7 +64,7 @@ contract JouleCore is JouleContractHolder {
         require(_address != 0);
         require(_timestamp > now);
         require(_timestamp < 0x100000000);
-        require(_gasLimit < MAX_GAS);
+        require(_gasLimit <= MAX_GAS);
         require(_gasPrice > GWEI);
         require(_gasPrice < 0x100000000 * GWEI);
         return findPrevious(_address, _timestamp, _gasLimit, _gasPrice / GWEI);
