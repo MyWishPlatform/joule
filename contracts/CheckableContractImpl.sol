@@ -44,3 +44,9 @@ contract Contract400kGas is CheckableContract {
         Checked();
     }
 }
+
+contract ContractAllGas is CheckableContract {
+    function check() public {
+        revert();
+    }
+}
